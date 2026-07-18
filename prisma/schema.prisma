@@ -57,3 +57,85 @@ model RoleModulePermission {
   @@unique([roleId, moduleSlug])
   @@map("role_module_permissions")
 }
+
+// ===== Cumplimiento documental de proveedores =====
+// Mirrors the "PRIMERA FASE" / "SEGUNDA FASE" sheets from the supplier
+// compliance Excel. Each import REPLACES the previous snapshot for that
+// phase (no history kept) — see ProveedoresImport for the last-import stamp.
+
+enum DocPhase {
+  FASE_1
+  FASE_2
+}
+
+enum DocStatus {
+  APROBADO
+  RECHAZADO
+  NO_APLICA
+  SIN_VALIDAR
+  NO_SUBIDO
+}
+
+model Supplier {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+  documentStatuses DocumentStatus[]
+
+  @@map("suppliers")
+}
+
+// Only populated for FASE_2 (product-level documents).
+model Product {
+  id         String   @id @default(uuid()) @db.Uuid
+  code       String
+  name       String
+  supplierId String   @db.Uuid
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  documentStatuses DocumentStatus[]
+
+  @@unique([code, supplierId])
+  @@map("products")
+}
+
+// One row per Excel column header (per phase) — lets new required documents
+// be added just by adding a column to the Excel, no schema change needed.
+model DocumentType {
+  id        String    @id @default(uuid()) @db.Uuid
+  phase     DocPhase
+  name      String
+  order     Int
+  documentStatuses DocumentStatus[]
+
+  @@unique([phase, name])
+  @@map("document_types")
+}
+
+// One row per (documentType, supplier|product) cell in the source Excel.
+model DocumentStatus {
+  id             String       @id @default(uuid()) @db.Uuid
+  phase          DocPhase
+  documentTypeId String       @db.Uuid
+  documentType   DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Cascade)
+  supplierId     String?      @db.Uuid
+  supplier       Supplier?    @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  productId      String?      @db.Uuid
+  product        Product?     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  status         DocStatus
+
+  @@unique([documentTypeId, supplierId, productId])
+  @@map("document_statuses")
+}
+
+// One row total: timestamp of the last replace-import per phase, shown in
+// the upload UI ("última carga: ...").
+model ProveedoresImport {
+  id         String   @id @default(uuid()) @db.Uuid
+  phase      DocPhase @unique
+  importedAt DateTime @default(now())
+  importedBy String
+
+  @@map("proveedores_imports")
+}

@@ -1,4 +1,4 @@
-import { ListTodo, Users, type LucideIcon } from "lucide-react";
+import { ListTodo, Users, Truck, type LucideIcon } from "lucide-react";
 
 export type ModuleColor = "teal" | "amber" | "violet" | "rose" | "sky";
 
@@ -41,6 +41,13 @@ export const MODULES: ModuleDefinition[] = [
     href: "/tareas",
     icon: ListTodo,
     color: "rose",
+  },
+  {
+    slug: "proveedores",
+    label: "Proveedores",
+    href: "/proveedores",
+    icon: Truck,
+    color: "amber",
   },
   {
     slug: "usuarios",

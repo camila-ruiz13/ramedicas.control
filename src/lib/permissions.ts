@@ -1,10 +1,16 @@
 import "server-only";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { MODULES, type ModuleDefinition } from "@/lib/modules";
 
-export async function getCurrentProfile() {
+// Wrapped in React's cache() so the auth round trip + profile query only
+// happen ONCE per request no matter how many times this is called — both
+// the shared (modules)/layout.tsx (for the sidebar) and each page's own
+// requireModuleView() call this, and without cache() each call redid a full
+// ~1s getUser() + ~1s Prisma query from scratch.
+export const getCurrentProfile = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -15,7 +21,7 @@ export async function getCurrentProfile() {
     where: { id: user.id },
     include: { role: { include: { permissions: true } } },
   });
-}
+});
 
 export type CurrentProfile = NonNullable<
   Awaited<ReturnType<typeof getCurrentProfile>>
@@ -63,5 +69,18 @@ export async function requireModuleView(moduleSlug: string) {
     ? profile.isAdmin
     : canView(profile, moduleSlug);
   if (!allowed) redirect("/");
+  return profile;
+}
+
+// Call at the top of a mutating server action (upload, create, delete, ...)
+// gated by the "interactuar" permission. Throws instead of redirecting since
+// actions run as a form submission, not a page render.
+export async function requireModuleInteract(moduleSlug: string) {
+  const profile = await requireProfile();
+  const moduleDef = MODULES.find((m) => m.slug === moduleSlug);
+  const allowed = moduleDef?.adminOnly
+    ? profile.isAdmin
+    : canInteract(profile, moduleSlug);
+  if (!allowed) throw new Error("No tenés permiso para esta acción");
   return profile;
 }
