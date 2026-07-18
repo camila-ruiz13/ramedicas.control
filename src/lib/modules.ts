@@ -1,13 +1,53 @@
-export type ModuleRole = "ADMIN" | "EDITOR" | "VIEWER";
+import { ListTodo, Users, type LucideIcon } from "lucide-react";
+
+export type ModuleColor = "teal" | "amber" | "violet" | "rose" | "sky";
 
 export type ModuleDefinition = {
   slug: string;
   label: string;
   href: string;
-  minRole: ModuleRole;
+  icon: LucideIcon;
+  color: ModuleColor;
+  // Gated purely by Profile.isAdmin instead of the Role/RoleModulePermission
+  // system — every other module's visibility comes from permissions.ts.
+  adminOnly?: boolean;
+};
+
+export const MODULE_COLOR_CLASSES: Record<
+  ModuleColor,
+  { badge: string; icon: string }
+> = {
+  teal: { badge: "bg-teal-500/15", icon: "text-teal-600 dark:text-teal-400" },
+  amber: {
+    badge: "bg-amber-500/15",
+    icon: "text-amber-600 dark:text-amber-400",
+  },
+  violet: {
+    badge: "bg-violet-500/15",
+    icon: "text-violet-600 dark:text-violet-400",
+  },
+  rose: { badge: "bg-rose-500/15", icon: "text-rose-600 dark:text-rose-400" },
+  sky: { badge: "bg-sky-500/15", icon: "text-sky-600 dark:text-sky-400" },
 };
 
 // Add one entry here per new module folder under src/app/(modules).
+// `adminOnly` modules are only ever shown/reachable for Profile.isAdmin users;
+// every other module's visibility is decided by the signed-in user's Role
+// permissions (see src/lib/permissions.ts), not by anything in this file.
 export const MODULES: ModuleDefinition[] = [
-  { slug: "tareas", label: "Tareas", href: "/tareas", minRole: "VIEWER" },
+  {
+    slug: "tareas",
+    label: "Tareas",
+    href: "/tareas",
+    icon: ListTodo,
+    color: "rose",
+  },
+  {
+    slug: "usuarios",
+    label: "Usuarios",
+    href: "/usuarios",
+    icon: Users,
+    color: "sky",
+    adminOnly: true,
+  },
 ];

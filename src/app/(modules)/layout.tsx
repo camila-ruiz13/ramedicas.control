@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireProfile, getVisibleModules } from "@/lib/permissions";
 import { SidebarNav } from "@/components/sidebar-nav";
 
 export default async function ModulesLayout({
@@ -7,21 +6,15 @@ export default async function ModulesLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Middleware already redirects unauthenticated requests to /login;
-  // this is a defense-in-depth check for direct server-side renders.
-  if (!user) {
-    redirect("/login");
-  }
+  // Redirects to /login if unauthenticated. Middleware already covers this
+  // too — this is a defense-in-depth check for direct server-side renders.
+  const profile = await requireProfile();
+  const visibleSlugs = getVisibleModules(profile).map((m) => m.slug);
 
   return (
-    <div className="flex min-h-screen">
-      <SidebarNav email={user.email ?? ""} />
-      <main className="flex-1 p-6">{children}</main>
+    <div className="flex min-h-screen bg-muted/40">
+      <SidebarNav email={profile.email} visibleSlugs={visibleSlugs} />
+      <main className="flex-1 p-8">{children}</main>
     </div>
   );
 }

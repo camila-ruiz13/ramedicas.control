@@ -9,9 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 // Mirrors a row in Supabase's auth.users (id is the same UUID).
@@ -20,15 +18,42 @@ model Profile {
   id        String   @id @db.Uuid
   email     String   @unique
   fullName  String?
-  role      Role     @default(VIEWER)
+  // Bypasses the Role/permission system entirely: full access + manages
+  // users and roles. Separate from `roleId` so there's always a way in
+  // even if roles/permissions are misconfigured.
+  isAdmin   Boolean  @default(false)
+  roleId    String?  @db.Uuid
+  role      Role?    @relation(fields: [roleId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("profiles")
 }
 
-enum Role {
-  ADMIN
-  EDITOR
-  VIEWER
+// Admin-defined job role (e.g. "Supervisor", "Auxiliar de bodega") that
+// bundles a set of per-module permissions. A user has at most one Role.
+model Role {
+  id          String               @id @default(uuid()) @db.Uuid
+  name        String               @unique
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  profiles    Profile[]
+  permissions RoleModulePermission[]
+
+  @@map("roles")
+}
+
+// One row per (role, module) granting view and/or interact (create/edit/delete
+// within that module) access. moduleSlug matches a slug in src/lib/modules.ts —
+// not a DB foreign key since modules are defined in code, not in the database.
+model RoleModulePermission {
+  id          String   @id @default(uuid()) @db.Uuid
+  roleId      String   @db.Uuid
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  moduleSlug  String
+  canView     Boolean  @default(false)
+  canInteract Boolean  @default(false)
+
+  @@unique([roleId, moduleSlug])
+  @@map("role_module_permissions")
 }
