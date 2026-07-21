@@ -1,8 +1,8 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 export function SubmitButton({
   children,
@@ -13,7 +13,7 @@ export function SubmitButton({
 
   return (
     <Button type="submit" disabled={pending} {...props}>
-      {pending && <Loader2 className="size-4 animate-spin" />}
+      {pending && <Spinner className="size-4" variant="current" />}
       {pending ? (pendingText ?? children) : children}
     </Button>
   );

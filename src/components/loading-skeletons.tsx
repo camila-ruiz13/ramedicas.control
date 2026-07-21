@@ -1,10 +1,13 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export function PageHeaderSkeleton() {
   return (
     <div className="flex items-center gap-3">
-      <Skeleton className="size-10 rounded-xl" />
+      <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
+        <Spinner className="size-5" />
+      </div>
       <div className="flex flex-col gap-2">
         <Skeleton className="h-6 w-48" />
         <Skeleton className="h-4 w-72" />

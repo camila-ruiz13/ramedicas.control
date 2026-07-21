@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowUpDown, Loader2 } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 import { TableHead } from "@/components/ui/table";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { useQueryParams } from "./use-query-params";
 
@@ -38,8 +39,8 @@ export function SortableHead({
     <TableHead className={cn("cursor-pointer select-none", className)} onClick={toggle}>
       <span className="inline-flex items-center gap-1">
         {children}
-        {active && isPending ? (
-          <Loader2 className="size-3 animate-spin" />
+        {isPending ? (
+          <Spinner className="size-3" />
         ) : (
           <ArrowUpDown className={cn("size-3", active ? "opacity-100" : "opacity-30")} />
         )}

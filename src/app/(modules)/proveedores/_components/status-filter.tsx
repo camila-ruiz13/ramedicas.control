@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter, Loader2 } from "lucide-react";
+import { Filter } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import { useQueryParams } from "@/components/use-query-params";
 
 const OPTIONS = [
@@ -40,7 +41,7 @@ export function StatusFilter({
     >
       <SelectTrigger className="w-full sm:w-52">
         {isPending ? (
-          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+          <Spinner className="size-4 text-muted-foreground" />
         ) : (
           <Filter className="size-4 text-muted-foreground" />
         )}

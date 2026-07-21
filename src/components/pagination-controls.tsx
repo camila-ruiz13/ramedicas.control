@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { useQueryParams } from "./use-query-params";
 
 export function PaginationControls({
@@ -33,7 +34,7 @@ export function PaginationControls({
           Anterior
         </Button>
         <span className="inline-flex items-center gap-1.5 tabular-nums">
-          {isPending && <Loader2 className="size-3.5 animate-spin" />}
+          {isPending && <Spinner className="size-3.5" />}
           Página {page} de {totalPages}
         </span>
         <Button

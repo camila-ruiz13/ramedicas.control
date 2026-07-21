@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -10,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -128,7 +128,7 @@ export function ProviderTable({
               <div className="max-h-[28rem] overflow-y-auto rounded-lg border">
                 {isPending || docs === null ? (
                   <p className="flex items-center justify-center gap-2 p-4 text-sm text-muted-foreground">
-                    <Loader2 className="size-4 animate-spin" />
+                    <Spinner className="size-4" />
                     Cargando documentos...
                   </p>
                 ) : (
