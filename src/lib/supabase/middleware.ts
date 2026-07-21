@@ -1,10 +1,23 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login"];
 
+// Set below only after Supabase verifies the JWT server-side (supabase.auth.getUser()).
+// Downstream code (getCurrentProfile in lib/permissions.ts) trusts this id without
+// re-verifying, so any copy of these headers arriving from the client is stripped
+// first — the proxy is the only writer.
+export const VERIFIED_USER_ID_HEADER = "x-verified-user-id";
+
 export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete(VERIFIED_USER_ID_HEADER);
+
+  const cookiesToApply: {
+    name: string;
+    value: string;
+    options?: CookieOptions;
+  }[] = [];
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,10 +31,7 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
+          cookiesToApply.push(...cookiesToSet);
         },
       },
     },
@@ -49,5 +59,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (user) {
+    requestHeaders.set(VERIFIED_USER_ID_HEADER, user.id);
+  }
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  cookiesToApply.forEach(({ name, value, options }) =>
+    response.cookies.set(name, value, options),
+  );
   return response;
 }

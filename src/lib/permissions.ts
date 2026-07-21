@@ -1,24 +1,24 @@
 import "server-only";
 import { cache } from "react";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { VERIFIED_USER_ID_HEADER } from "@/lib/supabase/middleware";
 import { MODULES, type ModuleDefinition } from "@/lib/modules";
 
-// Wrapped in React's cache() so the auth round trip + profile query only
-// happen ONCE per request no matter how many times this is called — both
-// the shared (modules)/layout.tsx (for the sidebar) and each page's own
-// requireModuleView() call this, and without cache() each call redid a full
-// ~1s getUser() + ~1s Prisma query from scratch.
+// The proxy (src/lib/supabase/middleware.ts) already ran supabase.auth.getUser()
+// for this request and stamped the verified id in VERIFIED_USER_ID_HEADER — reading
+// it here instead of calling getUser() again saves a second ~150-800ms round trip
+// to Supabase Auth on every single navigation/action. Wrapped in React's cache() so
+// the profile query itself only happens ONCE per request no matter how many times
+// this is called (shared (modules)/layout.tsx + each page's own requireModuleView()).
 export const getCurrentProfile = cache(async () => {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  const headerList = await headers();
+  const userId = headerList.get(VERIFIED_USER_ID_HEADER);
+  if (!userId) return null;
 
   return prisma.profile.findUnique({
-    where: { id: user.id },
+    where: { id: userId },
     include: { role: { include: { permissions: true } } },
   });
 });
