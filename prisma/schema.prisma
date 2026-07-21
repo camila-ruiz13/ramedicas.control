@@ -26,6 +26,7 @@ model Profile {
   role      Role?    @relation(fields: [roleId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  tareas    Tarea[]
 
   @@map("profiles")
 }
@@ -56,6 +57,32 @@ model RoleModulePermission {
 
   @@unique([roleId, moduleSlug])
   @@map("role_module_permissions")
+}
+
+// ===== Tareas =====
+
+enum TareaEstado {
+  PENDIENTE
+  EN_PROGRESO
+  COMPLETADA
+  CANCELADA
+}
+
+model Tarea {
+  id              String      @id @default(uuid()) @db.Uuid
+  titulo          String
+  // Fecha en la que el dueño de la tarea proyecta cerrarla.
+  fechaObjetivo   DateTime    @db.Date
+  // Se llena solo al marcar la tarea como COMPLETADA — permite comparar
+  // contra fechaObjetivo para saber si se cerró a tiempo o tarde.
+  fechaCompletada DateTime?   @db.Date
+  estado          TareaEstado @default(PENDIENTE)
+  profileId       String      @db.Uuid
+  profile         Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@map("tareas")
 }
 
 // ===== Cumplimiento documental de proveedores =====

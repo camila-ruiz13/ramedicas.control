@@ -1,9 +1,9 @@
 "use server";
 
-import ExcelJS from "exceljs";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { requireModuleInteract, requireModuleView } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { getSheetValues, getSheetTitles } from "@/lib/google-sheets";
 import {
   getSupplierDocuments,
   getSupplierProducts,
@@ -11,6 +11,13 @@ import {
   FASE2_CACHE_TAG,
 } from "@/lib/proveedores";
 import type { DocStatus } from "@/generated/prisma/client";
+
+// Same spreadsheet the "AUTORIZACIÓN COMPRAS PROVEEDORES" Excel used to be
+// exported from — first tab is Primera Fase, whichever tab is named
+// "segunda fase" (any case) is Segunda Fase, matching the old
+// workbook.worksheets[0] / findSheet(workbook, "segunda fase") logic.
+const SPREADSHEET_ID = "1JLPDVOElrx2-MDeRtvTcQssVzAgh1etqn5tkWLycZpw";
+const FASE2_SHEET_NAME_MATCH = "segunda fase";
 
 const STATUS_BY_LABEL: Record<string, DocStatus> = {
   aprobado: "APROBADO",
@@ -26,64 +33,55 @@ function parseStatus(raw: unknown): DocStatus | null {
   return STATUS_BY_LABEL[text] ?? null;
 }
 
-function cellText(row: ExcelJS.Row, col: number): string {
-  const value = row.getCell(col).value;
-  if (value === null || value === undefined) return "";
-  if (typeof value === "object" && "text" in value) return String(value.text ?? "");
-  return String(value).trim();
-}
-
-function findSheet(workbook: ExcelJS.Workbook, name: string) {
-  return workbook.worksheets.find(
-    (ws) => ws.name.trim().toLowerCase() === name.toLowerCase(),
-  );
-}
-
-function readHeaders(sheet: ExcelJS.Worksheet, firstCol: number) {
-  const headerRow = sheet.getRow(1);
+// firstCol is 0-based here (plain arrays from the Sheets API), unlike
+// ExcelJS's 1-based cell columns the old Excel-upload version indexed by.
+function readHeaders(headerRow: unknown[], firstCol: number) {
   const headers: { col: number; name: string }[] = [];
-  for (let c = firstCol; c <= sheet.columnCount; c++) {
-    const name = cellText(headerRow, c);
+  for (let c = firstCol; c < headerRow.length; c++) {
+    const name = String(headerRow[c] ?? "").trim();
     if (name) headers.push({ col: c, name });
   }
   return headers;
 }
 
-export async function importarProveedores(formData: FormData) {
+// Replaces the old Excel-upload flow: pulls both tabs live from the Google
+// Sheet and does the same full-replace-into-Postgres import the upload used
+// to do. Triggered by the "Actualizar" button on either Proveedores page.
+export async function sincronizarProveedores() {
   const profile = await requireModuleInteract("proveedores");
 
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    throw new Error("Seleccioná un archivo Excel (.xlsx)");
+  const titles = await getSheetTitles(SPREADSHEET_ID);
+  const fase1SheetName = titles[0];
+  const fase2SheetName = titles.find(
+    (t) => t.trim().toLowerCase() === FASE2_SHEET_NAME_MATCH,
+  );
+  if (!fase1SheetName) {
+    throw new Error("La hoja de Google no tiene ninguna pestaña para la Primera Fase");
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const workbook = new ExcelJS.Workbook();
-  // exceljs's bundled types reference a different (older) @types/node Buffer
-  // shape than this project's — the runtime value is a plain Buffer either way.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await workbook.xlsx.load(buffer as any);
+  const [values1, values2] = await Promise.all([
+    getSheetValues(SPREADSHEET_ID, fase1SheetName),
+    fase2SheetName ? getSheetValues(SPREADSHEET_ID, fase2SheetName) : Promise.resolve([]),
+  ]);
 
-  const fase1Sheet = workbook.worksheets[0];
-  const fase2Sheet = findSheet(workbook, "segunda fase");
-  if (!fase1Sheet) {
-    throw new Error("El archivo no tiene ninguna hoja para la Primera Fase");
+  if (values1.length < 1) {
+    throw new Error(`La pestaña "${fase1SheetName}" está vacía`);
   }
 
-  const headers1 = readHeaders(fase1Sheet, 2);
-  const headers2 = fase2Sheet ? readHeaders(fase2Sheet, 4) : [];
+  const headers1 = readHeaders(values1[0] ?? [], 1);
+  const headers2 = values2.length > 0 ? readHeaders(values2[0] ?? [], 3) : [];
 
   type Fase1Row = { proveedor: string; statuses: { col: number; status: DocStatus }[] };
   const fase1Rows: Fase1Row[] = [];
-  fase1Sheet.eachRow((row, rowNumber) => {
-    if (rowNumber === 1) return;
-    const proveedor = cellText(row, 1);
-    if (!proveedor) return;
+  for (const row of values1.slice(1)) {
+    if (!row || row.join("") === "") continue;
+    const proveedor = String(row[0] ?? "").trim();
+    if (!proveedor) continue;
     const statuses = headers1
-      .map((h) => ({ col: h.col, status: parseStatus(row.getCell(h.col).value) }))
+      .map((h) => ({ col: h.col, status: parseStatus(row[h.col]) }))
       .filter((s): s is { col: number; status: DocStatus } => s.status !== null);
     fase1Rows.push({ proveedor, statuses });
-  });
+  }
 
   type Fase2Row = {
     codigo: string;
@@ -92,18 +90,16 @@ export async function importarProveedores(formData: FormData) {
     statuses: { col: number; status: DocStatus }[];
   };
   const fase2Rows: Fase2Row[] = [];
-  if (fase2Sheet) {
-    fase2Sheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return;
-      const codigo = cellText(row, 1);
-      const articulo = cellText(row, 2);
-      if (!codigo && !articulo) return;
-      const proveedor = cellText(row, 3) || "Sin proveedor asignado";
-      const statuses = headers2
-        .map((h) => ({ col: h.col, status: parseStatus(row.getCell(h.col).value) }))
-        .filter((s): s is { col: number; status: DocStatus } => s.status !== null);
-      fase2Rows.push({ codigo, articulo, proveedor, statuses });
-    });
+  for (const row of values2.slice(1)) {
+    if (!row || row.join("") === "") continue;
+    const codigo = String(row[0] ?? "").trim();
+    const articulo = String(row[1] ?? "").trim();
+    if (!codigo && !articulo) continue;
+    const proveedor = String(row[2] ?? "").trim() || "Sin proveedor asignado";
+    const statuses = headers2
+      .map((h) => ({ col: h.col, status: parseStatus(row[h.col]) }))
+      .filter((s): s is { col: number; status: DocStatus } => s.status !== null);
+    fase2Rows.push({ codigo, articulo, proveedor, statuses });
   }
 
   const allSupplierNames = new Set<string>([
@@ -119,8 +115,8 @@ export async function importarProveedores(formData: FormData) {
   const resumen = await prisma.$transaction(
     async (tx) => {
       // Full replace: wipe the dimension + fact tables and rebuild from the
-      // uploaded file. DocumentType rows are upserted (not wiped) so ids stay
-      // stable across imports.
+      // sheet. DocumentType rows are upserted (not wiped) so ids stay
+      // stable across syncs.
       await tx.documentStatus.deleteMany({});
       await tx.product.deleteMany({});
       await tx.supplier.deleteMany({});
@@ -205,7 +201,7 @@ export async function importarProveedores(formData: FormData) {
         create: { phase: "FASE_1", importedBy: profile.email },
         update: { importedAt: new Date(), importedBy: profile.email },
       });
-      if (fase2Sheet) {
+      if (fase2SheetName) {
         await tx.proveedoresImport.upsert({
           where: { phase: "FASE_2" },
           create: { phase: "FASE_2", importedBy: profile.email },

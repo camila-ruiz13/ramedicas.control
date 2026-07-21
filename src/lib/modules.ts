@@ -1,4 +1,4 @@
-import { ListTodo, Users, Truck, type LucideIcon } from "lucide-react";
+import { ListTodo, Users, Truck, ShieldCheck, TrendingUp, type LucideIcon } from "lucide-react";
 
 export type ModuleColor = "teal" | "amber" | "violet" | "rose" | "sky";
 
@@ -48,6 +48,20 @@ export const MODULES: ModuleDefinition[] = [
     href: "/proveedores",
     icon: Truck,
     color: "amber",
+  },
+  {
+    slug: "autorizacion-compras",
+    label: "Autorización Compras",
+    href: "/autorizacion-compras",
+    icon: ShieldCheck,
+    color: "violet",
+  },
+  {
+    slug: "cambios-precios",
+    label: "Cambios de Precios",
+    href: "/cambios-precios",
+    icon: TrendingUp,
+    color: "teal",
   },
   {
     slug: "usuarios",

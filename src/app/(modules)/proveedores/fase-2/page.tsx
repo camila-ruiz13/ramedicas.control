@@ -4,7 +4,7 @@ import { getFase2AllProviders, summarizeStatus, applyStatusFilter } from "@/lib/
 import { parsePageParams, paginate } from "@/lib/pagination";
 import { MODULE_COLOR_CLASSES } from "@/lib/modules";
 import { ProveedoresSubNav } from "../_components/sub-nav";
-import { UploadForm } from "../_components/upload-form";
+import { SyncForm } from "../_components/sync-form";
 import { KpiCards } from "../_components/kpi-cards";
 import { StatusDonut } from "../_components/status-donut";
 import { ProviderTableFase2 } from "../_components/provider-table-fase2";
@@ -56,7 +56,7 @@ export default async function ProveedoresFase2Page({
 
       <ProveedoresSubNav />
 
-      {canInteract(profile, "proveedores") && <UploadForm />}
+      {canInteract(profile, "proveedores") && <SyncForm />}
 
       <KpiCards
         totalProveedores={summary.totalProveedores}

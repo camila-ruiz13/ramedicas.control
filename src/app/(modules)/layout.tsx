@@ -14,7 +14,11 @@ export default async function ModulesLayout({
   return (
     <div className="flex min-h-screen bg-muted/40">
       <SidebarNav email={profile.email} visibleSlugs={visibleSlugs} />
-      <main className="flex-1 p-8">{children}</main>
+      {/* min-w-0: without it, flex-1 refuses to shrink main below the
+          intrinsic width of its widest descendant (e.g. a wide table),
+          bulging the whole page instead of letting that descendant scroll
+          internally. */}
+      <main className="min-w-0 flex-1 p-8">{children}</main>
     </div>
   );
 }

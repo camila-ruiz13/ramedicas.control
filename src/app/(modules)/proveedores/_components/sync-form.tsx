@@ -1,51 +1,60 @@
 "use client";
 
 import { useActionState } from "react";
-import { Upload } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { IndeterminateProgress } from "@/components/indeterminate-progress";
-import { importarProveedores } from "../actions";
+import { sincronizarProveedores } from "../actions";
 
-type ImportResult = Awaited<ReturnType<typeof importarProveedores>>;
+type SyncResult = Awaited<ReturnType<typeof sincronizarProveedores>>;
 type State =
   | { status: "idle" }
-  | { status: "success"; resumen: ImportResult }
+  | { status: "success"; resumen: SyncResult }
   | { status: "error"; message: string };
 
-async function runImport(_prev: State, formData: FormData): Promise<State> {
+// useActionState's action always receives (prevState, formData) — this form
+// has no fields, so both are unused here.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function runSync(_prev: State, _formData: FormData): Promise<State> {
   try {
-    const resumen = await importarProveedores(formData);
+    const resumen = await sincronizarProveedores();
     return { status: "success", resumen };
   } catch (error) {
     return {
       status: "error",
-      message: error instanceof Error ? error.message : "No se pudo importar el archivo",
+      message: error instanceof Error ? error.message : "No se pudo sincronizar con la hoja",
     };
   }
 }
 
-export function UploadForm() {
-  const [state, formAction, pending] = useActionState<State, FormData>(runImport, {
+export function SyncForm() {
+  const [state, formAction, pending] = useActionState<State, FormData>(runSync, {
     status: "idle",
   });
 
   return (
     <div className="rounded-xl border bg-card p-4">
       {pending ? (
-        <IndeterminateProgress />
+        <IndeterminateProgress
+          messages={[
+            "Consultando Google Sheets...",
+            "Leyendo Primera y Segunda Fase...",
+            "Contando ovejitas... 1, 2, 3... 🐑",
+            "Actualizando la base de datos...",
+            "¡Ya casi! 😅",
+          ]}
+        />
       ) : (
         <form action={formAction} className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-3">
-            <Input type="file" name="file" accept=".xlsx" required className="max-w-xs" />
-            <Button type="submit" className="gap-2">
-              <Upload className="size-4" />
-              Subir Excel
+            <Button type="submit" variant="outline" className="gap-2">
+              <RefreshCw className="size-4" />
+              Actualizar desde Google Sheets
             </Button>
           </div>
           {state.status === "success" && (
             <p className="text-sm text-emerald-700 dark:text-emerald-400">
-              Importado: {state.resumen.fase1.proveedores} proveedores /{" "}
+              Sincronizado: {state.resumen.fase1.proveedores} proveedores /{" "}
               {state.resumen.fase1.documentos} documentos (Primera Fase){" "}
               {state.resumen.fase2.articulos > 0 &&
                 `— ${state.resumen.fase2.proveedores} proveedores / ${state.resumen.fase2.articulos} artículos / ${state.resumen.fase2.documentos} documentos (Segunda Fase)`}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, LogOut, Pill } from "lucide-react";
@@ -10,6 +11,36 @@ import { cn } from "@/lib/utils";
 
 function initials(email: string) {
   return email.slice(0, 2).toUpperCase();
+}
+
+const COLLAPSED_STORAGE_KEY = "sidebar-collapsed";
+
+// A tiny external store instead of useState+useEffect: reading localStorage
+// only after mount to dodge a hydration mismatch would mean calling
+// setState from inside an effect, which triggers an extra cascading render
+// (flagged by the React Compiler lint). useSyncExternalStore reads the
+// persisted value directly on the client's first render and renders `false`
+// server-side, so there's exactly one render either way.
+let collapsedListeners: Array<() => void> = [];
+
+function getCollapsedSnapshot() {
+  return localStorage.getItem(COLLAPSED_STORAGE_KEY) === "1";
+}
+
+function getCollapsedServerSnapshot() {
+  return false;
+}
+
+function subscribeCollapsed(listener: () => void) {
+  collapsedListeners.push(listener);
+  return () => {
+    collapsedListeners = collapsedListeners.filter((l) => l !== listener);
+  };
+}
+
+function setCollapsedStore(next: boolean) {
+  localStorage.setItem(COLLAPSED_STORAGE_KEY, next ? "1" : "0");
+  for (const listener of collapsedListeners) listener();
 }
 
 export function SidebarNav({
@@ -25,30 +56,57 @@ export function SidebarNav({
   // can't cross the client-boundary serialization.
   const modules = MODULES.filter((m) => visibleSlugs.includes(m.slug));
 
+  const collapsed = useSyncExternalStore(
+    subscribeCollapsed,
+    getCollapsedSnapshot,
+    getCollapsedServerSnapshot,
+  );
+
+  function toggle() {
+    setCollapsedStore(!collapsed);
+  }
+
   return (
-    <aside className="flex w-64 shrink-0 flex-col justify-between border-r bg-sidebar p-4 text-sidebar-foreground">
+    <aside
+      className={cn(
+        "flex shrink-0 flex-col justify-between border-r bg-sidebar p-4 text-sidebar-foreground transition-[width] duration-200",
+        collapsed ? "w-[68px]" : "w-64",
+      )}
+    >
       <div className="flex flex-col gap-6">
-        <div className="flex items-center gap-2 px-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-sm">
+        <button
+          type="button"
+          onClick={toggle}
+          title={collapsed ? "Expandir menú" : "Colapsar menú"}
+          className={cn(
+            "flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-sidebar-accent/50",
+            collapsed && "justify-center px-0",
+          )}
+        >
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-sm">
             <Pill className="size-4" />
           </div>
-          <span className="font-heading text-sm font-bold tracking-tight">
-            Ramedicas Control
-          </span>
-        </div>
+          {!collapsed && (
+            <span className="truncate font-heading text-sm font-bold tracking-tight">
+              Ramedicas Control
+            </span>
+          )}
+        </button>
 
         <nav className="flex flex-col gap-1">
           <Link
             href="/"
+            title="Inicio"
             className={cn(
               "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              collapsed && "justify-center px-0",
               pathname === "/"
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
             )}
           >
-            <Home className="size-4" />
-            Inicio
+            <Home className="size-4 shrink-0" />
+            {!collapsed && "Inicio"}
           </Link>
           {modules.map((moduleDef) => {
             const Icon = moduleDef.icon;
@@ -57,8 +115,10 @@ export function SidebarNav({
               <Link
                 key={moduleDef.slug}
                 href={moduleDef.href}
+                title={moduleDef.label}
                 className={cn(
                   "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  collapsed && "justify-center px-0",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
@@ -66,11 +126,11 @@ export function SidebarNav({
               >
                 <Icon
                   className={cn(
-                    "size-4",
+                    "size-4 shrink-0",
                     active && MODULE_COLOR_CLASSES[moduleDef.color].icon,
                   )}
                 />
-                {moduleDef.label}
+                {!collapsed && moduleDef.label}
               </Link>
             );
           })}
@@ -78,23 +138,30 @@ export function SidebarNav({
       </div>
 
       <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2">
+        <div
+          className={cn(
+            "flex items-center gap-2 rounded-lg border bg-card px-3 py-2",
+            collapsed && "justify-center px-0",
+          )}
+          title={email}
+        >
           <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
             {initials(email)}
           </div>
-          <span className="truncate text-xs text-muted-foreground">
-            {email}
-          </span>
+          {!collapsed && (
+            <span className="truncate text-xs text-muted-foreground">{email}</span>
+          )}
         </div>
         <form action={logout}>
           <Button
             variant="outline"
             size="sm"
             type="submit"
-            className="w-full justify-start gap-2"
+            title="Cerrar sesión"
+            className={cn("w-full gap-2", collapsed ? "justify-center px-0" : "justify-start")}
           >
-            <LogOut className="size-4" />
-            Cerrar sesión
+            <LogOut className="size-4 shrink-0" />
+            {!collapsed && "Cerrar sesión"}
           </Button>
         </form>
       </div>
