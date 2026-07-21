@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryParams } from "./use-query-params";
 
@@ -32,7 +32,8 @@ export function PaginationControls({
           <ChevronLeft className="size-4" />
           Anterior
         </Button>
-        <span className="tabular-nums">
+        <span className="inline-flex items-center gap-1.5 tabular-nums">
+          {isPending && <Loader2 className="size-3.5 animate-spin" />}
           Página {page} de {totalPages}
         </span>
         <Button

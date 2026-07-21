@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -130,7 +131,10 @@ export function ProviderTableFase2({
               </DialogHeader>
               <div className="max-h-[28rem] space-y-4 overflow-y-auto pr-1">
                 {isPending || productos === null ? (
-                  <p className="p-4 text-sm text-muted-foreground">Cargando artículos...</p>
+                  <p className="flex items-center justify-center gap-2 p-4 text-sm text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin" />
+                    Cargando artículos...
+                  </p>
                 ) : (
                   productos.map((prod) => (
                     <div key={`${prod.codigo}-${prod.articulo}`} className="rounded-lg border">

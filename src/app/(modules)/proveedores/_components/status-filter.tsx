@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter } from "lucide-react";
+import { Filter, Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -28,7 +28,7 @@ export function StatusFilter({
   filterParam?: string;
   pageParam?: string;
 }) {
-  const { update } = useQueryParams();
+  const { update, isPending } = useQueryParams();
 
   return (
     <Select
@@ -39,7 +39,11 @@ export function StatusFilter({
       }
     >
       <SelectTrigger className="w-full sm:w-52">
-        <Filter className="size-4 text-muted-foreground" />
+        {isPending ? (
+          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+        ) : (
+          <Filter className="size-4 text-muted-foreground" />
+        )}
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

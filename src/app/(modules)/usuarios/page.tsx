@@ -7,7 +7,7 @@ import { createUser, updateUserRole, deleteUser } from "./actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -96,9 +96,9 @@ export default async function UsuariosPage() {
                 Es administrador (acceso total, sin restricciones)
               </Label>
             </div>
-            <Button type="submit" className="w-fit">
+            <SubmitButton className="w-fit" pendingText="Creando...">
               Crear usuario
-            </Button>
+            </SubmitButton>
           </form>
         </CardContent>
       </Card>
@@ -143,18 +143,18 @@ export default async function UsuariosPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button type="submit" size="sm" variant="outline">
+                    <SubmitButton size="sm" variant="outline" pendingText="Guardando...">
                       Guardar
-                    </Button>
+                    </SubmitButton>
                   </form>
                 </TableCell>
                 <TableCell>
                   {user.id !== currentAdmin.id && (
                     <form action={deleteUser}>
                       <input type="hidden" name="userId" value={user.id} />
-                      <Button type="submit" size="sm" variant="ghost">
+                      <SubmitButton size="sm" variant="ghost">
                         <Trash2 className="size-4 text-destructive" />
-                      </Button>
+                      </SubmitButton>
                     </form>
                   )}
                 </TableCell>

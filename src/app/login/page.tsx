@@ -1,7 +1,7 @@
 import { Mail, Lock, Pill, Fingerprint, Sparkles, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { login } from "./actions";
 
 export default async function LoginPage({
@@ -65,12 +65,12 @@ export default async function LoginPage({
               </div>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button
-              type="submit"
+            <SubmitButton
               className="h-11 w-fit rounded-xl bg-primary px-8 font-medium hover:bg-primary/90"
+              pendingText="Entrando..."
             >
               Entrar
-            </Button>
+            </SubmitButton>
           </form>
         </div>
       </div>

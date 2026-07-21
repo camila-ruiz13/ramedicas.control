@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Loader2 } from "lucide-react";
 import { TableHead } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useQueryParams } from "./use-query-params";
@@ -24,7 +24,7 @@ export function SortableHead({
   pageParam?: string;
   className?: string;
 }) {
-  const { update, searchParams } = useQueryParams();
+  const { update, searchParams, isPending } = useQueryParams();
   const currentField = searchParams.get(sortParam) ?? initialField;
   const currentDir = (searchParams.get(dirParam) as "asc" | "desc" | null) ?? initialDir;
   const active = currentField === field;
@@ -38,7 +38,11 @@ export function SortableHead({
     <TableHead className={cn("cursor-pointer select-none", className)} onClick={toggle}>
       <span className="inline-flex items-center gap-1">
         {children}
-        <ArrowUpDown className={cn("size-3", active ? "opacity-100" : "opacity-30")} />
+        {active && isPending ? (
+          <Loader2 className="size-3 animate-spin" />
+        ) : (
+          <ArrowUpDown className={cn("size-3", active ? "opacity-100" : "opacity-30")} />
+        )}
       </span>
     </TableHead>
   );

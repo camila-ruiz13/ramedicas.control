@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const ASSIGNABLE_MODULES = MODULES.filter((m) => !m.adminOnly);
@@ -54,7 +54,7 @@ export default async function RolesPage() {
               <Label htmlFor="name">Nombre</Label>
               <Input id="name" name="name" placeholder="Ej. Supervisor" required />
             </div>
-            <Button type="submit">Crear</Button>
+            <SubmitButton pendingText="Creando...">Crear</SubmitButton>
           </form>
         </CardContent>
       </Card>
@@ -81,9 +81,9 @@ export default async function RolesPage() {
                   </div>
                   <form action={deleteRole}>
                     <input type="hidden" name="roleId" value={role.id} />
-                    <Button type="submit" size="sm" variant="ghost">
+                    <SubmitButton size="sm" variant="ghost">
                       <Trash2 className="size-4 text-destructive" />
-                    </Button>
+                    </SubmitButton>
                   </form>
                 </div>
               </CardHeader>
@@ -123,9 +123,9 @@ export default async function RolesPage() {
                       </tbody>
                     </table>
                   </div>
-                  <Button type="submit" size="sm" className="w-fit">
+                  <SubmitButton size="sm" className="w-fit" pendingText="Guardando...">
                     Guardar permisos
-                  </Button>
+                  </SubmitButton>
                 </form>
               </CardContent>
             </Card>

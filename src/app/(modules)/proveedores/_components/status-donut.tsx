@@ -58,7 +58,7 @@ export function StatusDonut({ counts }: { counts: Record<DocStatus, number> }) {
               {d.label}
             </span>
             <span className="font-medium tabular-nums">
-              {d.value.toLocaleString()}{" "}
+              {d.value.toLocaleString("es-CO")}{" "}
               <span className="text-muted-foreground">
                 ({Math.round((d.value / total) * 100)}%)
               </span>
