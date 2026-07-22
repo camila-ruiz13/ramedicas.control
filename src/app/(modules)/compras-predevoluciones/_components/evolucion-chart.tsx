@@ -49,7 +49,7 @@ export function EvolucionChart({
           width={56}
           tickFormatter={(v) => valueFormatter(Number(v))}
         />
-        <ChartTooltip content={<ChartTooltipContent formatter={(value, name) => [valueFormatter(Number(value)), name]} />} />
+        <ChartTooltip content={<ChartTooltipContent formatter={(value) => valueFormatter(Number(value))} />} />
         <Legend />
         {anios.map((a) => (
           <Bar key={a} dataKey={a} fill={`var(--color-${a})`} radius={[3, 3, 0, 0]} />
