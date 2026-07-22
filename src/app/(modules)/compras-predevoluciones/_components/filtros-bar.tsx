@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Select,
@@ -41,12 +43,27 @@ export function FiltrosBar({
     "": "Todos los meses",
     ...Object.fromEntries(MESES),
   };
-  const proveedorItems: Record<string, string> = {
-    "": "Todos los proveedores",
-    ...Object.fromEntries(proveedores.map((p) => [p.nit, p.nombre])),
-  };
+
+  // Con ~200 proveedores, un <Select> deja "Todos los proveedores" imposible
+  // de alcanzar (el popup se abre anclado al valor seleccionado, no al
+  // principio de la lista) — un input con autocompletado (igual que
+  // Cambios de Precios) resuelve esto y de paso permite escribir para buscar.
+  const nombrePorNit = new Map(proveedores.map((p) => [p.nit, p.nombre]));
+  const nitPorNombre = new Map(proveedores.map((p) => [p.nombre, p.nit]));
+  const [proveedorInput, setProveedorInput] = useState(nombrePorNit.get(nit) ?? "");
+
+  function onProveedorChange(value: string) {
+    setProveedorInput(value);
+    const trimmed = value.trim();
+    if (trimmed === "") {
+      update({ nit: null, page: null });
+    } else if (nitPorNombre.has(trimmed)) {
+      update({ nit: nitPorNombre.get(trimmed)!, page: null });
+    }
+  }
 
   function restablecer() {
+    setProveedorInput("");
     update({ anio: null, mes: null, nit: null, q: null, page: null });
   }
 
@@ -92,18 +109,18 @@ export function FiltrosBar({
         <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           Proveedor
         </label>
-        <Select items={proveedorItems} value={nit} onValueChange={(next) => update({ nit: (next as string) || null, page: null })}>
-          <SelectTrigger className="w-64">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(proveedorItems).map(([value, label]) => (
-              <SelectItem key={value || "all"} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Input
+          list="compras-proveedores"
+          placeholder="Todos los proveedores"
+          value={proveedorInput}
+          onChange={(e) => onProveedorChange(e.target.value)}
+          className="w-64"
+        />
+        <datalist id="compras-proveedores">
+          {proveedores.map((p) => (
+            <option key={p.nit} value={p.nombre} />
+          ))}
+        </datalist>
       </div>
 
       {isPending && <Spinner className="size-4 text-muted-foreground" />}
