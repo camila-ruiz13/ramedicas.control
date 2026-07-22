@@ -25,3 +25,18 @@ export const STATUS_ORDER: DocStatus[] = [
   "NO_SUBIDO",
   "NO_APLICA",
 ];
+
+// Same >=90 / >=60 / else ranges used everywhere a compliance % shows up
+// (KPI cards, progress bars) — >=90 is healthy, >=60 needs attention,
+// below that is critical.
+export function pctTextClass(pct: number): string {
+  if (pct >= 90) return "text-emerald-600 dark:text-emerald-400";
+  if (pct >= 60) return "text-amber-600 dark:text-amber-400";
+  return "text-red-600 dark:text-red-400";
+}
+
+export function pctBarClass(pct: number): string {
+  if (pct >= 90) return "bg-emerald-500";
+  if (pct >= 60) return "bg-amber-500";
+  return "bg-red-500";
+}

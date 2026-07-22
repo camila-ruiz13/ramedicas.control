@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { pctBarClass } from "@/lib/proveedores-constants";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import {
@@ -102,7 +103,7 @@ export function ProviderTable({
                 <TableCell>{p.pendientes}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <Progress value={p.pct} className="h-2 w-28" />
+                    <Progress value={p.pct} className="h-2 w-28" indicatorClassName={pctBarClass(p.pct)} />
                     <span className="w-12 text-xs font-semibold">{p.pct}%</span>
                   </div>
                 </TableCell>

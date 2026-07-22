@@ -8,6 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { pctBarClass } from "@/lib/proveedores-constants";
 import { SortableHead } from "@/components/sortable-head";
 import { PaginationControls } from "@/components/pagination-controls";
 import type { ProviderRowFase2 } from "@/lib/proveedores";
@@ -117,7 +118,11 @@ export function ValidacionTecnicaTable({
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <Progress value={p.pctValidacion} className="h-2 w-28" />
+                  <Progress
+                    value={p.pctValidacion}
+                    className="h-2 w-28"
+                    indicatorClassName={pctBarClass(p.pctValidacion)}
+                  />
                   <span className="w-12 text-xs font-semibold">{p.pctValidacion}%</span>
                 </div>
               </TableCell>
