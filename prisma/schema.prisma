@@ -166,3 +166,104 @@ model ProveedoresImport {
 
   @@map("proveedores_imports")
 }
+
+// ===== Descuentos y rebates de proveedores =====
+// Cruza la paramétrica de ofertas (descuentos/rebates negociados por
+// proveedor+código) contra las compras reales de la compañía, mes a mes.
+// Fuente: 3 carpetas en Drive con archivos Excel reales (no Google Sheets) —
+// COMPRA/ y PREDEVOLUCIONES/ traen un archivo por mes que se acumula: cada
+// sincronización relee TODOS los archivos presentes y reemplaza estas tablas
+// por completo (igual que Proveedores), agrupando cada fila por su propia
+// fecha, no por el nombre del archivo. OFERTAS/ es un solo archivo siempre-
+// vigente que también se reemplaza completo en cada sync.
+
+// Una línea de compra (uno por producto dentro de una factura de compra).
+model CompraLinea {
+  id              String   @id @default(uuid()) @db.Uuid
+  mes             String // "2026-07", derivado de fechaFactura
+  numero          String // Número de compra, ej. COM019013
+  fechaFactura    DateTime @db.Date
+  nroFactura      String
+  nitProveedor    String
+  nombreProveedor String
+  codigo          String
+  articulo        String
+  unidades        Int
+  subtotal        Decimal
+
+  @@index([mes, codigo])
+  @@index([nitProveedor])
+  @@index([numero])
+  @@map("compra_lineas")
+}
+
+// Una línea de devolución (predevolución) de compra.
+model PredevolucionLinea {
+  id       String   @id @default(uuid()) @db.Uuid
+  mes      String // derivado de fecha
+  numero   String // DV002657
+  fecha    DateTime @db.Date
+  nit      String
+  codigo   String
+  unidades Int
+  docCruce String // Número de la compra original a la que pertenece
+
+  @@index([mes, codigo])
+  @@index([docCruce])
+  @@map("predevolucion_lineas")
+}
+
+// Un acuerdo de descuento vigente: un proveedor (NIT) + un concepto
+// (FINANCIERO, COMERCIAL, INFORMACION, LOGISTICO, REBATE...), con su
+// vigencia. El id es el propio "ID Oferta" del Excel (ej. "900932340FI").
+model Oferta {
+  id              String   @id
+  nit             String
+  nombreProveedor String
+  concepto        String
+  fechaInicial    DateTime @db.Date
+  fechaFinal      DateTime @db.Date
+  productos       OfertaProducto[]
+  cortes          OfertaCorte[]
+
+  @@index([nit])
+  @@map("ofertas")
+}
+
+// Períodos de liquidación de una oferta — guardado para referencia, no se
+// usa todavía en el cálculo de descuento esperado.
+model OfertaCorte {
+  id               String   @id @default(uuid()) @db.Uuid
+  ofertaId         String
+  oferta           Oferta   @relation(fields: [ofertaId], references: [id], onDelete: Cascade)
+  corteNumero      Int
+  fechaInicioCorte DateTime @db.Date
+  fechaFinCorte    DateTime @db.Date
+
+  @@index([ofertaId])
+  @@map("oferta_cortes")
+}
+
+// El % real por código dentro de una oferta, con su tramo de unidades
+// (rango1/rango2) evaluado mes a mes.
+model OfertaProducto {
+  id          String  @id @default(uuid()) @db.Uuid
+  ofertaId    String
+  oferta      Oferta  @relation(fields: [ofertaId], references: [id], onDelete: Cascade)
+  codArticulo String
+  rango1      Decimal
+  rango2      Decimal
+  porPct      Decimal
+
+  @@index([ofertaId, codArticulo])
+  @@map("oferta_productos")
+}
+
+// Timestamp de la última sincronización, mostrado en la UI.
+model DescuentosImport {
+  id         String   @id @default(uuid())
+  importedAt DateTime @default(now())
+  importedBy String
+
+  @@map("descuentos_imports")
+}

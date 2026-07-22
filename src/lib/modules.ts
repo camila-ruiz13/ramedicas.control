@@ -1,6 +1,6 @@
-import { ListTodo, Users, Truck, ShieldCheck, TrendingUp, type LucideIcon } from "lucide-react";
+import { ListTodo, Users, Truck, ShieldCheck, TrendingUp, Percent, type LucideIcon } from "lucide-react";
 
-export type ModuleColor = "teal" | "amber" | "violet" | "rose" | "sky";
+export type ModuleColor = "teal" | "amber" | "violet" | "rose" | "sky" | "indigo";
 
 export type ModuleDefinition = {
   slug: string;
@@ -28,6 +28,7 @@ export const MODULE_COLOR_CLASSES: Record<
   },
   rose: { badge: "bg-rose-500/15", icon: "text-rose-600 dark:text-rose-400" },
   sky: { badge: "bg-sky-500/15", icon: "text-sky-600 dark:text-sky-400" },
+  indigo: { badge: "bg-indigo-500/15", icon: "text-indigo-600 dark:text-indigo-400" },
 };
 
 // Add one entry here per new module folder under src/app/(modules).
@@ -62,6 +63,13 @@ export const MODULES: ModuleDefinition[] = [
     href: "/cambios-precios",
     icon: TrendingUp,
     color: "teal",
+  },
+  {
+    slug: "descuentos-proveedores",
+    label: "Descuentos y Rebates",
+    href: "/descuentos-proveedores",
+    icon: Percent,
+    color: "indigo",
   },
   {
     slug: "usuarios",
