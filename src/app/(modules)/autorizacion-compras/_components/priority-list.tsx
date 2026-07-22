@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { displayFecha, fmtCOP } from "@/lib/autorizacion-compras-constants";
 import type { PriorityGroup } from "@/lib/autorizacion-compras";
@@ -24,7 +23,8 @@ export function PriorityList({ groups }: { groups: PriorityGroup[] }) {
           <div key={g.key} className="border-b last:border-0">
             <div
               className={cn(
-                "grid grid-cols-[24px_1fr_auto_auto] items-center gap-3 py-2.5 text-sm",
+                "grid grid-cols-[24px_1fr_auto] items-center gap-3 border-l-2 py-2.5 pl-2 text-sm",
+                porEncima ? "border-l-red-500" : "border-l-emerald-500",
                 multi && "cursor-pointer hover:bg-muted/40",
               )}
               onClick={() => multi && setOpenKey(open ? null : g.key)}
@@ -50,17 +50,6 @@ export function PriorityList({ groups }: { groups: PriorityGroup[] }) {
               >
                 {fmtCOP.format(g.difValor)}
               </span>
-              <Badge
-                variant="outline"
-                className={cn(
-                  "border-none",
-                  porEncima
-                    ? "bg-red-500/15 text-red-700 dark:text-red-400"
-                    : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
-                )}
-              >
-                {porEncima ? "Por encima" : "Por debajo"}
-              </Badge>
             </div>
             {multi && open && (
               <div className="flex flex-col gap-1 py-1 pb-3 pl-9 text-xs">

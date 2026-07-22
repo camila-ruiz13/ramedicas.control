@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -83,7 +82,10 @@ export function DetailTable({
             {rows.map((d, i) => {
               const porEncima = d.variacion === "POR ENCIMA";
               return (
-                <TableRow key={`${d.nroFactura}-${d.codArticulo}-${i}`}>
+                <TableRow
+                  key={`${d.nroFactura}-${d.codArticulo}-${i}`}
+                  className={cn("border-l-2", porEncima ? "border-l-red-500" : "border-l-emerald-500")}
+                >
                   <TableCell className="whitespace-nowrap">{displayFecha(d.fechaFactura)}</TableCell>
                   <TableCell className="max-w-28 truncate" title={d.nroFactura}>
                     {d.nroFactura}
@@ -97,18 +99,13 @@ export function DetailTable({
                   <TableCell className="text-right font-mono">{fmtCOP.format(d.costoLista)}</TableCell>
                   <TableCell className="text-right font-mono">{fmtCOP.format(d.difValor)}</TableCell>
                   <TableCell className="text-right font-mono">{fmtPct(d.difPct)}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "border-none",
-                        porEncima
-                          ? "bg-red-500/15 text-red-700 dark:text-red-400"
-                          : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
-                      )}
-                    >
-                      {d.variacion}
-                    </Badge>
+                  <TableCell
+                    className={cn(
+                      "font-medium",
+                      porEncima ? "text-red-700 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400",
+                    )}
+                  >
+                    {d.variacion}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{d.proveedor}</TableCell>
                 </TableRow>

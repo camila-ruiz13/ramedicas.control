@@ -21,7 +21,6 @@ import { CondicionCards } from "./_components/condicion-cards";
 import { MiniKpis } from "./_components/mini-kpis";
 import { ProveedoresWidget } from "./_components/proveedores-widget";
 import { CondicionWidget } from "./_components/condicion-widget";
-import { CondicionDonut } from "./_components/condicion-donut";
 import { DetailTable } from "./_components/detail-table";
 
 export default async function CambiosPreciosPage({
@@ -140,7 +139,7 @@ export default async function CambiosPreciosPage({
         variacionPromedio={miniVariacion}
       />
 
-      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-3">
+      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-2">
         <div className="min-w-0 rounded-xl border bg-card p-4">
           <h3 className="mb-3 text-sm font-semibold">Proveedores en este desglose</h3>
           <ProveedoresWidget rows={providerCounts} />
@@ -148,10 +147,6 @@ export default async function CambiosPreciosPage({
         <div className="min-w-0 rounded-xl border bg-card p-4">
           <h3 className="mb-3 text-sm font-semibold">Por condición</h3>
           <CondicionWidget rows={computeCondicionCounts(filteredRows)} />
-        </div>
-        <div className="min-w-0 rounded-xl border bg-card p-4">
-          <h3 className="mb-3 text-sm font-semibold">Distribución por condición</h3>
-          <CondicionDonut rows={computeCondicionCounts(filteredRows)} />
         </div>
       </div>
 

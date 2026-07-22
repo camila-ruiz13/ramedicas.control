@@ -107,14 +107,8 @@ export function DetailTable({
                   <TableCell className="max-w-40 truncate" title={r.proveedor}>
                     {r.proveedor}
                   </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className="border-none"
-                      style={{ color: col.color, backgroundColor: col.bg }}
-                    >
-                      {r.condicion}
-                    </Badge>
+                  <TableCell className="font-medium" style={{ color: col.color }}>
+                    {r.condicion}
                   </TableCell>
                   <TableCell className="text-right font-mono">{r.anteriorRaw || "—"}</TableCell>
                   <TableCell className="text-right font-mono">{r.nuevoRaw || "—"}</TableCell>
