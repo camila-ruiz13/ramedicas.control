@@ -1,6 +1,6 @@
-import { ListTodo, Users, Truck, ShieldCheck, TrendingUp, Percent, ShoppingCart, type LucideIcon } from "lucide-react";
+import { ListTodo, Users, Truck, ShieldCheck, TrendingUp, Percent, ShoppingCart, Handshake, type LucideIcon } from "lucide-react";
 
-export type ModuleColor = "teal" | "amber" | "violet" | "rose" | "sky" | "indigo" | "cyan";
+export type ModuleColor = "teal" | "amber" | "violet" | "rose" | "sky" | "indigo" | "cyan" | "fuchsia";
 
 export type ModuleDefinition = {
   slug: string;
@@ -30,6 +30,7 @@ export const MODULE_COLOR_CLASSES: Record<
   sky: { badge: "bg-sky-500/15", icon: "text-sky-600 dark:text-sky-400" },
   indigo: { badge: "bg-indigo-500/15", icon: "text-indigo-600 dark:text-indigo-400" },
   cyan: { badge: "bg-cyan-500/15", icon: "text-cyan-600 dark:text-cyan-400" },
+  fuchsia: { badge: "bg-fuchsia-500/15", icon: "text-fuchsia-600 dark:text-fuchsia-400" },
 };
 
 // Add one entry here per new module folder under src/app/(modules).
@@ -78,6 +79,13 @@ export const MODULES: ModuleDefinition[] = [
     href: "/descuentos-proveedores",
     icon: Percent,
     color: "indigo",
+  },
+  {
+    slug: "prorroga-proveedores",
+    label: "Prórroga Proveedores",
+    href: "/prorroga-proveedores",
+    icon: Handshake,
+    color: "fuchsia",
   },
   {
     slug: "usuarios",
