@@ -45,6 +45,10 @@ export type ProrrogaRow = {
   excepcion: string;
   observacion: string;
   anexo: string;
+  // Columna G ("Número de artículos"): un VLOOKUP en la hoja que falla con
+  // #N/A para varios proveedores cuyo nombre no matchea exacto en la tabla
+  // de origen — null en esos casos, no un dato nuestro que se pueda arreglar.
+  numeroArticulos: number | null;
 };
 
 // Misma normalización del script original: sin tildes, mayúsculas, trim.

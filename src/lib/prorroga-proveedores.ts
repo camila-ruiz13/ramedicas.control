@@ -32,6 +32,11 @@ async function fetchProrrogaRaw(): Promise<ProrrogaRow[]> {
     if (!proveedor) continue;
 
     const aceptaRaw = String(row[2] ?? "").trim();
+    // Columna G es un VLOOKUP en la hoja — para varios proveedores devuelve
+    // "#N/A (Did not find value...)" en vez de un número cuando el nombre no
+    // matchea exacto en la tabla de origen. Number() de eso da NaN, que
+    // tratamos como "sin dato" en vez de forzar un 0 engañoso.
+    const numeroArticulosRaw = Number(String(row[6] ?? "").trim());
     rows.push({
       proveedor,
       nit: String(row[1] ?? "").trim(),
@@ -40,6 +45,7 @@ async function fetchProrrogaRaw(): Promise<ProrrogaRow[]> {
       excepcion: String(row[3] ?? "").trim(),
       observacion: String(row[4] ?? "").trim(),
       anexo: String(row[5] ?? "").trim(),
+      numeroArticulos: Number.isFinite(numeroArticulosRaw) ? numeroArticulosRaw : null,
     });
   }
   return rows;

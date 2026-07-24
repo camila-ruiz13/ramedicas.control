@@ -10,6 +10,7 @@ import { ServerSearchInput } from "@/components/server-search-input";
 import { SortableHead } from "@/components/sortable-head";
 import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
+import { fmtNum } from "@/lib/cambios-precios-constants";
 import { ESTADO_LABELS, ESTADO_BADGE_CLASSES, type ProrrogaRow } from "@/lib/prorroga-proveedores-constants";
 
 export function DetailTable({
@@ -54,12 +55,15 @@ export function DetailTable({
               <SortableHead field="anexo" initialField={sortField} initialDir={sortDir}>
                 Anexo en Drive
               </SortableHead>
+              <SortableHead field="numeroArticulos" initialField={sortField} initialDir={sortDir} className="text-right">
+                Códigos
+              </SortableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-muted-foreground">
                   No se encontraron proveedores.
                 </TableCell>
               </TableRow>
@@ -82,6 +86,9 @@ export function DetailTable({
                   {r.observacion || "—"}
                 </TableCell>
                 <TableCell className="text-muted-foreground">{r.anexo || "—"}</TableCell>
+                <TableCell className="text-right font-mono" title={r.numeroArticulos === null ? "No disponible (VLOOKUP sin coincidencia en la hoja)" : undefined}>
+                  {r.numeroArticulos === null ? "—" : fmtNum.format(r.numeroArticulos)}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
