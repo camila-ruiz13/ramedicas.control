@@ -54,8 +54,12 @@ const COND_COLOR_RULES: { test: string; color: string; bg: string }[] = [
   { test: "sin definir", color: "#64748B", bg: "#F1F5F9" }, // gris
 ];
 
+const COMBINING_MARKS = new RegExp("[\\u0300-\\u036f]", "g");
+
 export function colorDeCondicion(nombre: string): { color: string; bg: string } {
-  const nl = nombre.toLowerCase();
+  // Sin tildes antes de comparar — condiciones como "Activación convocatoria"
+  // deben matchear la misma regla que "Activacion" (sin tilde).
+  const nl = nombre.normalize("NFD").replace(COMBINING_MARKS, "").toLowerCase();
   for (const rule of COND_COLOR_RULES) {
     if (nl.includes(rule.test)) return { color: rule.color, bg: rule.bg };
   }
