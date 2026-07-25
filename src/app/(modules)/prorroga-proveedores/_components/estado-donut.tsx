@@ -25,8 +25,8 @@ export function EstadoDonut({ counts }: { counts: EstadoCount[] }) {
   const total = data.reduce((s, d) => s + d.value, 0);
 
   return (
-    <div className="flex flex-col gap-3">
-      <ChartContainer config={config} className="mx-auto h-[200px] w-[200px]">
+    <div className="flex items-center gap-4">
+      <ChartContainer config={config} className="h-[180px] w-[180px] shrink-0">
         <PieChart>
           <ChartTooltip content={<ChartTooltipContent nameKey="label" hideLabel />} />
           <Pie data={data} dataKey="value" nameKey="label" innerRadius={50} outerRadius={80}>
@@ -36,7 +36,7 @@ export function EstadoDonut({ counts }: { counts: EstadoCount[] }) {
           </Pie>
         </PieChart>
       </ChartContainer>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-1 flex-col gap-1.5">
         {data.map((d) => (
           <div key={d.label} className="flex items-center justify-between gap-2 text-xs">
             <span className="flex items-center gap-1.5 text-muted-foreground">
