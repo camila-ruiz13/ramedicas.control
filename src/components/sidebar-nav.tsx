@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Home, LogOut, Menu, Pill, X } from "lucide-react";
+import { ChevronDown, Home, LogOut, Menu, X } from "lucide-react";
 import { MODULES, MODULE_COLOR_CLASSES, UNITS, type UnitSlug } from "@/lib/modules";
 import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
@@ -92,8 +93,14 @@ export function SidebarNav({
         >
           <Menu className="size-5" />
         </button>
-        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white">
-          <Pill className="size-3.5" />
+        <div className="flex size-7 shrink-0 items-center justify-center">
+          <Image
+            src="/dragon-icon.png"
+            alt=""
+            width={22}
+            height={22}
+            title="Icono de dragón por Magnific — Flaticon"
+          />
         </div>
         <span className="truncate font-heading text-sm font-bold tracking-tight">
           Ramedicas Control
@@ -127,8 +134,14 @@ export function SidebarNav({
                 collapsed && "md:justify-center md:px-0",
               )}
             >
-              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-sm">
-                <Pill className="size-4" />
+              <div className="flex size-8 shrink-0 items-center justify-center">
+                <Image
+                  src="/dragon-icon.png"
+                  alt=""
+                  width={26}
+                  height={26}
+                  title="Icono de dragón por Magnific — Flaticon"
+                />
               </div>
               <span
                 className={cn(
