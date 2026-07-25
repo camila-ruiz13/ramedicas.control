@@ -12,13 +12,17 @@ export default async function ModulesLayout({
   const visibleSlugs = getVisibleModules(profile).map((m) => m.slug);
 
   return (
-    <div className="flex min-h-screen bg-muted/40">
+    // flex-col on mobile so the sidebar's own mobile top bar stacks above
+    // main instead of sitting beside it in a row; md:flex-row restores the
+    // side-by-side desktop layout (the sidebar itself goes off-canvas/fixed
+    // below md, see SidebarNav).
+    <div className="flex min-h-screen flex-col bg-muted/40 md:flex-row">
       <SidebarNav email={profile.email} visibleSlugs={visibleSlugs} />
       {/* min-w-0: without it, flex-1 refuses to shrink main below the
           intrinsic width of its widest descendant (e.g. a wide table),
           bulging the whole page instead of letting that descendant scroll
           internally. */}
-      <main className="min-w-0 flex-1 p-8">{children}</main>
+      <main className="min-w-0 flex-1 p-4 md:p-8">{children}</main>
     </div>
   );
 }

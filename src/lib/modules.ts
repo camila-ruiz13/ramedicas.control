@@ -1,13 +1,49 @@
-import { ListTodo, Users, Truck, ShieldCheck, TrendingUp, Percent, ShoppingCart, Handshake, Scale, type LucideIcon } from "lucide-react";
+import { Anchor, Castle, Flame, Landmark, Mountain, Snowflake, Users, ShoppingCart, Handshake, Scale, type LucideIcon } from "lucide-react";
 
 export type ModuleColor = "teal" | "amber" | "violet" | "rose" | "sky" | "indigo" | "cyan" | "fuchsia" | "emerald";
 
+export type UnitSlug = "westeros" | "essos";
+
+export type UnitDefinition = {
+  slug: UnitSlug;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  color: ModuleColor;
+};
+
+// Las "unidades" son puramente una agrupación visual/de navegación (portada
+// de Inicio + secciones del sidebar) — los permisos siguen siendo por
+// módulo (permissions.ts), una unidad no tiene su propio permiso.
+export const UNITS: UnitDefinition[] = [
+  {
+    slug: "westeros",
+    label: "Westeros",
+    description: "Tareas y autorizaciones",
+    icon: Castle,
+    color: "indigo",
+  },
+  {
+    slug: "essos",
+    label: "Essos",
+    description: "Proveedores, precios y compras",
+    icon: Flame,
+    color: "amber",
+  },
+];
+
 export type ModuleDefinition = {
   slug: string;
+  // Nombre "temático" (Juego de Tronos) que se muestra grande en el sidebar
+  // y en la tarjeta de la unidad.
   label: string;
+  // Nombre funcional original — se muestra chico debajo de `label` para que
+  // se siga entendiendo qué hace el módulo aunque tenga nombre de casa/ciudad.
+  subtitle?: string;
   href: string;
   icon: LucideIcon;
   color: ModuleColor;
+  unit: UnitSlug;
   // Gated purely by Profile.isAdmin instead of the Role/RoleModulePermission
   // system — every other module's visibility comes from permissions.ts.
   adminOnly?: boolean;
@@ -41,66 +77,84 @@ export const MODULE_COLOR_CLASSES: Record<
 export const MODULES: ModuleDefinition[] = [
   {
     slug: "tareas",
-    label: "Tareas",
+    label: "Casterly Rock",
+    subtitle: "Tareas",
     href: "/tareas",
-    icon: ListTodo,
+    icon: Mountain,
     color: "rose",
+    unit: "westeros",
   },
   {
     slug: "proveedores",
-    label: "Proveedores",
+    label: "Braavos",
+    subtitle: "Convocatoria Proveedores",
     href: "/proveedores",
-    icon: Truck,
+    icon: Landmark,
     color: "amber",
+    unit: "essos",
   },
   {
     slug: "autorizacion-compras",
-    label: "Autorización Compras",
+    label: "Dragonstone",
+    subtitle: "Autorización Compras",
     href: "/autorizacion-compras",
-    icon: ShieldCheck,
+    icon: Flame,
     color: "violet",
+    unit: "westeros",
   },
   {
     slug: "cambios-precios",
-    label: "Cambios de Precios",
+    label: "Winterfell",
+    subtitle: "Cambios de Precios",
     href: "/cambios-precios",
-    icon: TrendingUp,
+    icon: Snowflake,
     color: "teal",
+    unit: "westeros",
   },
   {
     slug: "compras-predevoluciones",
-    label: "Compras y Predevoluciones",
+    label: "Pentos",
+    subtitle: "Compras y Predevoluciones",
     href: "/compras-predevoluciones",
     icon: ShoppingCart,
     color: "cyan",
+    unit: "essos",
   },
   {
     slug: "descuentos-proveedores",
-    label: "Descuentos y Rebates",
+    label: "Volantis",
+    subtitle: "Descuentos y Rebates",
     href: "/descuentos-proveedores",
-    icon: Percent,
+    icon: Anchor,
     color: "indigo",
+    unit: "essos",
   },
   {
     slug: "prorroga-proveedores",
-    label: "Prórroga Proveedores",
+    label: "Qarth",
+    subtitle: "Prórroga Proveedores",
     href: "/prorroga-proveedores",
     icon: Handshake,
     color: "fuchsia",
+    unit: "essos",
   },
   {
     slug: "precios-regulados",
-    label: "Precios Regulados",
+    label: "Astapor",
+    subtitle: "Precios Regulados",
     href: "/precios-regulados",
     icon: Scale,
     color: "emerald",
+    unit: "essos",
   },
   {
     slug: "usuarios",
-    label: "Usuarios",
+    label: "Myr",
+    subtitle: "Usuarios",
     href: "/usuarios",
     icon: Users,
     color: "sky",
+    unit: "essos",
     adminOnly: true,
   },
 ];

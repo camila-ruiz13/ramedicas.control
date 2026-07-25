@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { VERIFIED_USER_ID_HEADER } from "@/lib/supabase/middleware";
-import { MODULES, type ModuleDefinition } from "@/lib/modules";
+import { MODULES, UNITS, type ModuleDefinition, type UnitSlug } from "@/lib/modules";
 
 // The proxy (src/lib/supabase/middleware.ts) already ran supabase.auth.getUser()
 // for this request and stamped the verified id in VERIFIED_USER_ID_HEADER — reading
@@ -57,6 +57,17 @@ export function getVisibleModules(profile: CurrentProfile): ModuleDefinition[] {
   return MODULES.filter((moduleDef) =>
     moduleDef.adminOnly ? profile.isAdmin : canView(profile, moduleDef.slug),
   );
+}
+
+// Unidades con al menos un módulo visible para este usuario — una unidad
+// sin módulos visibles no tiene sentido mostrarla ni en Inicio ni en el sidebar.
+export function getVisibleUnits(profile: CurrentProfile) {
+  const visible = getVisibleModules(profile);
+  return UNITS.filter((unit) => visible.some((m) => m.unit === unit.slug));
+}
+
+export function getVisibleModulesForUnit(profile: CurrentProfile, unitSlug: UnitSlug): ModuleDefinition[] {
+  return getVisibleModules(profile).filter((m) => m.unit === unitSlug);
 }
 
 // Call at the top of a module's page.tsx/layout.tsx to enforce access
