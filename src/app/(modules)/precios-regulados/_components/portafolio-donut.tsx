@@ -7,9 +7,9 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { ESTADO_LABELS, ESTADO_COLORS, type EstadoCount } from "@/lib/prorroga-proveedores-constants";
+import { PORTAFOLIO_LABELS, PORTAFOLIO_COLORS, type PortafolioCount } from "@/lib/precios-regulados-constants";
 
-export function EstadoDonut({ counts }: { counts: EstadoCount[] }) {
+export function PortafolioDonut({ counts }: { counts: PortafolioCount[] }) {
   if (counts.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
@@ -18,9 +18,13 @@ export function EstadoDonut({ counts }: { counts: EstadoCount[] }) {
     );
   }
 
-  const data = counts.map((c) => ({ label: ESTADO_LABELS[c.estado], value: c.count, fill: ESTADO_COLORS[c.estado] }));
+  const data = counts.map((c) => ({
+    label: PORTAFOLIO_LABELS[c.portafolio],
+    value: c.count,
+    fill: PORTAFOLIO_COLORS[c.portafolio],
+  }));
   const config: ChartConfig = Object.fromEntries(
-    counts.map((c) => [ESTADO_LABELS[c.estado], { label: ESTADO_LABELS[c.estado], color: ESTADO_COLORS[c.estado] }]),
+    counts.map((c) => [PORTAFOLIO_LABELS[c.portafolio], { label: PORTAFOLIO_LABELS[c.portafolio], color: PORTAFOLIO_COLORS[c.portafolio] }]),
   );
   const total = data.reduce((s, d) => s + d.value, 0);
 

@@ -1,0 +1,121 @@
+"use client";
+
+import { useState } from "react";
+import { Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { fmtCOP } from "@/lib/autorizacion-compras-constants";
+import type { ProveedorPorEncima } from "@/lib/precios-regulados";
+
+// Mismo patrón que ProviderTable en el módulo Proveedores: clic en la fila
+// abre un Dialog con el detalle, en vez de desplegar/apilar contenido en la
+// misma tarjeta.
+export function ProveedoresPorEncimaList({ groups }: { groups: ProveedorPorEncima[] }) {
+  const [selected, setSelected] = useState<ProveedorPorEncima | null>(null);
+
+  if (groups.length === 0) {
+    return (
+      <div className="flex h-40 items-center justify-center text-center text-sm text-muted-foreground">
+        Ningún proveedor tiene productos por encima del precio regulado.
+      </div>
+    );
+  }
+
+  const max = Math.max(...groups.map((g) => g.count));
+
+  return (
+    <>
+      <div className="flex max-h-[280px] flex-col overflow-y-auto">
+        {groups.map((g) => {
+          const pct = (g.count / max) * 100;
+          return (
+            <button
+              key={g.proveedor}
+              type="button"
+              onClick={() => setSelected(g)}
+              className="flex w-full items-center gap-3 border-b py-2.5 text-left last:border-0 hover:bg-muted/40"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
+                  <span className="min-w-0 truncate font-medium">{g.proveedor}</span>
+                  <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                    +{fmtCOP.format(g.sobrecostoTotal)}
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-red-500" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+              <span className="flex shrink-0 items-center gap-1 rounded-full bg-red-500/15 py-0.5 pr-2 pl-1.5 text-xs font-semibold text-red-700 dark:text-red-400">
+                <Plus className="size-3" />
+                {g.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
+        <DialogContent className="max-w-2xl sm:max-w-2xl">
+          {selected && (
+            <>
+              <DialogHeader className="-mx-4 -mt-4 border-b px-5 pt-4 pb-3">
+                <DialogTitle>{selected.proveedor}</DialogTitle>
+                <DialogDescription>
+                  {selected.count} productos por encima del precio regulado — sobrecosto acumulado{" "}
+                  <span className="font-mono font-semibold text-red-600 dark:text-red-400">
+                    +{fmtCOP.format(selected.sobrecostoTotal)}
+                  </span>
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[28rem] overflow-y-auto rounded-lg border">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-card">
+                    <tr className="text-xs text-muted-foreground">
+                      <th className="p-2.5 text-left font-medium">Producto</th>
+                      <th className="p-2.5 text-right font-medium">Costo (portafolio)</th>
+                      <th className="p-2.5 text-right font-medium">Precio circular 22</th>
+                      <th className="p-2.5 text-right font-medium">Diferencia</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selected.productos.map((p) => (
+                      <tr key={p.codigo} className="border-t">
+                        <td className="min-w-0 max-w-56 truncate p-2.5" title={p.nombreComercial || p.principioActivo}>
+                          <span className="font-mono text-xs text-muted-foreground">{p.codigo}</span>{" "}
+                          {p.nombreComercial || p.principioActivo || "—"}
+                        </td>
+                        <td className="p-2.5 text-right font-mono">
+                          {p.costo === null ? "—" : fmtCOP.format(p.costo)}
+                        </td>
+                        <td className="p-2.5 text-right font-mono">
+                          {p.precioCircular22 !== null
+                            ? fmtCOP.format(p.precioCircular22)
+                            : (p.circular22Comentario ?? "—")}
+                        </td>
+                        <td className="p-2.5 text-right font-mono font-medium text-red-600 dark:text-red-400">
+                          {p.diferencia !== null ? `+${fmtCOP.format(p.diferencia)}` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <DialogFooter>
+                <DialogClose render={<Button variant="outline" />}>Cerrar</DialogClose>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
