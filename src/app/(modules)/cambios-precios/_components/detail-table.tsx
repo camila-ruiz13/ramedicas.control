@@ -125,7 +125,7 @@ export function DetailTable({
                       {r.listaRaw || (realizado ? "Realizado" : "Pendiente")}
                     </Badge>
                   </TableCell>
-                  <TableCell className="max-w-72 whitespace-normal break-words" title={r.observacion}>
+                  <TableCell className="min-w-[26rem] whitespace-normal break-words" title={r.observacion}>
                     {r.observacion || "—"}
                   </TableCell>
                 </TableRow>
