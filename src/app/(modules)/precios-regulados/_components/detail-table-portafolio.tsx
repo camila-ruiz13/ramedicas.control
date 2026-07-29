@@ -12,14 +12,19 @@ import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
 import { fmtCOP } from "@/lib/autorizacion-compras-constants";
 import {
-  CAMBIO_LABELS,
-  CAMBIO_BADGE_CLASSES,
   PORTAFOLIO_LABELS,
   PORTAFOLIO_BADGE_CLASSES,
   type PrecioReguladoRow,
 } from "@/lib/precios-regulados-constants";
 
-export function DetailTable({
+// Tabla de la pestaña "Portafolio vs Circular 22": compara costo/precio de
+// portafolio contra precioCircular22. El badge de "Portafolio vs circular"
+// muestra el comentario tal cual está en la columna AB
+// (portafolioVsCircularRaw) — a pedido de Camila, no una etiqueta traducida
+// — PORTAFOLIO_LABELS solo se usa como respaldo si por algo viniera vacío.
+// No mezcla nada del análisis circular 19 vs 22 — ese vive en
+// detail-table-cambio.tsx.
+export function DetailTablePortafolio({
   rows,
   page,
   totalPages,
@@ -61,9 +66,6 @@ export function DetailTable({
               <SortableHead field="diferencia" initialField={sortField} initialDir={sortDir} className="text-right">
                 Diferencia
               </SortableHead>
-              <SortableHead field="cambioRegulacion" initialField={sortField} initialDir={sortDir}>
-                Cambio regulación
-              </SortableHead>
               <SortableHead field="portafolioVsCircular" initialField={sortField} initialDir={sortDir}>
                 Portafolio vs circular
               </SortableHead>
@@ -72,7 +74,7 @@ export function DetailTable({
           <TableBody>
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-muted-foreground">
                   No se encontraron productos.
                 </TableCell>
               </TableRow>
@@ -110,13 +112,8 @@ export function DetailTable({
                   {r.diferencia === null ? "—" : fmtCOP.format(r.diferencia)}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={cn("border-none", CAMBIO_BADGE_CLASSES[r.cambioRegulacion])}>
-                    {CAMBIO_LABELS[r.cambioRegulacion]}
-                  </Badge>
-                </TableCell>
-                <TableCell>
                   <Badge variant="outline" className={cn("border-none", PORTAFOLIO_BADGE_CLASSES[r.portafolioVsCircular])}>
-                    {PORTAFOLIO_LABELS[r.portafolioVsCircular]}
+                    {r.portafolioVsCircularRaw || PORTAFOLIO_LABELS[r.portafolioVsCircular]}
                   </Badge>
                 </TableCell>
               </TableRow>

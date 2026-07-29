@@ -14,26 +14,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { fmtCOP } from "@/lib/autorizacion-compras-constants";
-import type { ProveedorPorEncima } from "@/lib/precios-regulados";
+import type { ProveedorPorSubio } from "@/lib/precios-regulados";
 
 // El ranking sigue el filtro activo (ver page.tsx: se calcula sobre las
-// filas ya filtradas) — no siempre son sobrecostos, así que el signo puede
-// ser negativo (ej. filtrando "Por debajo del precio regulado"). +prefijo
-// solo cuando es positivo, fmtCOP ya antepone "-" cuando es negativo.
+// filas ya filtradas) — no siempre son incrementos, así que el signo puede
+// ser negativo (ej. filtrando "Bajó de regulación"). +prefijo solo cuando es
+// positivo, fmtCOP ya antepone "-" cuando es negativo.
 function fmtSigned(n: number): string {
   return n > 0 ? `+${fmtCOP.format(n)}` : fmtCOP.format(n);
 }
 
-// Mismo patrón que ProviderTable en el módulo Proveedores: clic en la fila
-// abre un Dialog con el detalle, en vez de desplegar/apilar contenido en la
-// misma tarjeta.
-export function ProveedoresPorEncimaList({ groups }: { groups: ProveedorPorEncima[] }) {
-  const [selected, setSelected] = useState<ProveedorPorEncima | null>(null);
+// Mismo patrón que ProveedoresPorEncimaList (pestaña Portafolio vs Circular
+// 22), pero para el ranking de la pestaña Circular 19 vs 22.
+export function ProveedoresPorSubioList({ groups }: { groups: ProveedorPorSubio[] }) {
+  const [selected, setSelected] = useState<ProveedorPorSubio | null>(null);
 
   if (groups.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center text-center text-sm text-muted-foreground">
-        Ningún proveedor tiene productos por encima del precio regulado.
+        Ningún proveedor tiene productos que subieron de la circular 19 a la 22.
       </div>
     );
   }
@@ -56,14 +55,14 @@ export function ProveedoresPorEncimaList({ groups }: { groups: ProveedorPorEncim
                 <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
                   <span className="min-w-0 truncate font-medium">{g.proveedor}</span>
                   <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                    {fmtSigned(g.sobrecostoTotal)}
+                    {fmtSigned(g.incrementoTotal)}
                   </span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-red-500" style={{ width: `${pct}%` }} />
+                  <div className="h-full rounded-full bg-orange-500" style={{ width: `${pct}%` }} />
                 </div>
               </div>
-              <span className="flex shrink-0 items-center gap-1 rounded-full bg-red-500/15 py-0.5 pr-2 pl-1.5 text-xs font-semibold text-red-700 dark:text-red-400">
+              <span className="flex shrink-0 items-center gap-1 rounded-full bg-orange-500/15 py-0.5 pr-2 pl-1.5 text-xs font-semibold text-orange-700 dark:text-orange-400">
                 <Plus className="size-3" />
                 {g.count}
               </span>
@@ -79,15 +78,15 @@ export function ProveedoresPorEncimaList({ groups }: { groups: ProveedorPorEncim
               <DialogHeader className="-mx-4 -mt-4 border-b px-5 pt-4 pb-3">
                 <DialogTitle>{selected.proveedor}</DialogTitle>
                 <DialogDescription>
-                  {selected.count} productos — diferencia acumulada vs. circular 22{" "}
+                  {selected.count} productos — diferencia acumulada circular 19 vs 22{" "}
                   <span
                     className={cn(
                       "font-mono font-semibold",
-                      selected.sobrecostoTotal > 0 && "text-red-600 dark:text-red-400",
-                      selected.sobrecostoTotal < 0 && "text-emerald-600 dark:text-emerald-400",
+                      selected.incrementoTotal > 0 && "text-red-600 dark:text-red-400",
+                      selected.incrementoTotal < 0 && "text-emerald-600 dark:text-emerald-400",
                     )}
                   >
-                    {fmtSigned(selected.sobrecostoTotal)}
+                    {fmtSigned(selected.incrementoTotal)}
                   </span>
                 </DialogDescription>
               </DialogHeader>
@@ -96,7 +95,7 @@ export function ProveedoresPorEncimaList({ groups }: { groups: ProveedorPorEncim
                   <thead className="sticky top-0 bg-card">
                     <tr className="text-xs text-muted-foreground">
                       <th className="p-2.5 text-left font-medium">Producto</th>
-                      <th className="p-2.5 text-right font-medium">Costo (portafolio)</th>
+                      <th className="p-2.5 text-right font-medium">Precio circular 19</th>
                       <th className="p-2.5 text-right font-medium">Precio circular 22</th>
                       <th className="p-2.5 text-right font-medium">Diferencia</th>
                     </tr>
@@ -109,7 +108,9 @@ export function ProveedoresPorEncimaList({ groups }: { groups: ProveedorPorEncim
                           {p.nombreComercial || p.principioActivo || "—"}
                         </td>
                         <td className="p-2.5 text-right font-mono">
-                          {p.costo === null ? "—" : fmtCOP.format(p.costo)}
+                          {p.precioCircular19 !== null
+                            ? fmtCOP.format(p.precioCircular19)
+                            : (p.circular19Comentario ?? "—")}
                         </td>
                         <td className="p-2.5 text-right font-mono">
                           {p.precioCircular22 !== null
@@ -119,11 +120,11 @@ export function ProveedoresPorEncimaList({ groups }: { groups: ProveedorPorEncim
                         <td
                           className={cn(
                             "p-2.5 text-right font-mono font-medium",
-                            p.diferencia !== null && p.diferencia > 0 && "text-red-600 dark:text-red-400",
-                            p.diferencia !== null && p.diferencia < 0 && "text-emerald-600 dark:text-emerald-400",
+                            p.diferenciaCircular !== null && p.diferenciaCircular > 0 && "text-red-600 dark:text-red-400",
+                            p.diferenciaCircular !== null && p.diferenciaCircular < 0 && "text-emerald-600 dark:text-emerald-400",
                           )}
                         >
-                          {p.diferencia !== null ? fmtSigned(p.diferencia) : "—"}
+                          {p.diferenciaCircular !== null ? fmtSigned(p.diferenciaCircular) : "—"}
                         </td>
                       </tr>
                     ))}
