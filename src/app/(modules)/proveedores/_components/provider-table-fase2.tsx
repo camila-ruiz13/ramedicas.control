@@ -126,8 +126,8 @@ export function ProviderTableFase2({
               <DialogHeader className="-mx-4 -mt-4 border-b px-5 pt-4 pb-3">
                 <DialogTitle>{selected.proveedor}</DialogTitle>
                 <DialogDescription>
-                  {selected.articulos} artículo(s) — {selected.pct}% de cumplimiento (sin
-                  &quot;No Aplica&quot;)
+                  {selected.articulos} artículo(s) — {selected.pct}% de cumplimiento
+                  (incumplimiento = no subidos)
                 </DialogDescription>
               </DialogHeader>
               <div className="max-h-[28rem] space-y-4 overflow-y-auto pr-1">

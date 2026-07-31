@@ -123,7 +123,7 @@ export function ProviderTable({
                 <DialogTitle>{selected.proveedor}</DialogTitle>
                 <DialogDescription>
                   {selected.aprobados} de {selected.total} documentos aprobados — {selected.pct}%
-                  de cumplimiento (sin &quot;No Aplica&quot;)
+                  de cumplimiento (incumplimiento = no subidos)
                 </DialogDescription>
               </DialogHeader>
               <div className="max-h-[28rem] overflow-y-auto rounded-lg border">

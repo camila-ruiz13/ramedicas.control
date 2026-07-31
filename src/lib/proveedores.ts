@@ -18,9 +18,12 @@ function totalOf(counts: StatusCounts) {
   return Object.values(counts).reduce((a, b) => a + b, 0);
 }
 
-function pctAprobado(counts: StatusCounts) {
+// A pedido de Camila (2026-07-31): el incumplimiento es únicamente "No
+// subido" — Rechazado y Sin Validar sí se subieron (solo faltan corregir o
+// revisar), así que no cuentan en contra del % de cumplimiento como antes.
+function pctCumplimiento(counts: StatusCounts) {
   const denom = totalOf(counts) - counts.NO_APLICA;
-  return denom > 0 ? Math.round((counts.APROBADO / denom) * 1000) / 10 : 0;
+  return denom > 0 ? Math.round(((denom - counts.NO_SUBIDO) / denom) * 1000) / 10 : 0;
 }
 
 export function applyStatusFilter<T extends { pct: number; pendientes: number }>(
@@ -83,7 +86,7 @@ async function fetchFase1AllProviders(): Promise<ProviderRow[]> {
     total: totalOf(counts),
     aprobados: counts.APROBADO,
     pendientes: counts.RECHAZADO + counts.SIN_VALIDAR + counts.NO_SUBIDO,
-    pct: pctAprobado(counts),
+    pct: pctCumplimiento(counts),
     counts,
   }));
 }
@@ -133,7 +136,7 @@ async function fetchFase2AllProviders(): Promise<ProviderRowFase2[]> {
       validados,
       pctValidacion:
         subidoParaValidar > 0 ? Math.round((validados / subidoParaValidar) * 1000) / 10 : 0,
-      pct: pctAprobado(counts),
+      pct: pctCumplimiento(counts),
       counts,
     };
   });
