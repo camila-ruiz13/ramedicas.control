@@ -141,7 +141,7 @@ export const MODULES: ModuleDefinition[] = [
   {
     slug: "precios-regulados",
     label: "Astapor",
-    subtitle: "Precios Regulados",
+    subtitle: "Control Directo",
     href: "/precios-regulados",
     icon: Scale,
     color: "emerald",

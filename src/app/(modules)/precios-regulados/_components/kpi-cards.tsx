@@ -4,7 +4,7 @@ import { CAMBIO_ORDER, CAMBIO_LABELS, CAMBIO_COLORS, type CambioRegulacion } fro
 
 export function KpiCards({ total, conteo }: { total: number; conteo: Record<CambioRegulacion, number> }) {
   const items = [
-    { label: "Total regulados", value: total, color: undefined },
+    { label: "Total control directo", value: total, color: undefined },
     ...CAMBIO_ORDER.map((cambio) => ({
       label: CAMBIO_LABELS[cambio],
       value: conteo[cambio],

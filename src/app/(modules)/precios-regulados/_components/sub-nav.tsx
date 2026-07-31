@@ -5,7 +5,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { href: "/precios-regulados", label: "Circular 19 vs 22" },
+  { href: "/precios-regulados", label: "Info General" },
+  { href: "/precios-regulados/circular-19-vs-22", label: "Circular 19 vs 22" },
   { href: "/precios-regulados/portafolio-vs-circular", label: "Portafolio vs Circular 22" },
 ];
 

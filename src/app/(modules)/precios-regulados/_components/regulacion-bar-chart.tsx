@@ -40,7 +40,7 @@ export function RegulacionBarChart({ nivel0, nivel1 }: { nivel0: DrilldownBar[];
           Todos los artículos
         </button>
       ) : (
-        <p className="text-xs text-muted-foreground">Clic en &quot;Regulados&quot; para ver el desglose.</p>
+        <p className="text-xs text-muted-foreground">Clic en &quot;Control directo&quot; para ver el desglose.</p>
       )}
       <ChartContainer config={config} className="aspect-auto h-52 w-full">
         <BarChart data={data} margin={{ left: 4, right: 12 }}>
@@ -63,7 +63,7 @@ export function RegulacionBarChart({ nivel0, nivel1 }: { nivel0: DrilldownBar[];
             radius={[4, 4, 0, 0]}
             cursor={!drill ? "pointer" : "default"}
             onClick={(entry) => {
-              if (!drill && entry && (entry as { label?: string }).label === "Regulados") setDrill(true);
+              if (!drill && entry && (entry as { label?: string }).label === "Control directo") setDrill(true);
             }}
           >
             {data.map((d) => (

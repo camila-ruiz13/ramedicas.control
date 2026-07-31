@@ -33,14 +33,14 @@ export const CAMBIO_ORDER: CambioRegulacion[] = [
 ];
 
 export const CAMBIO_LABELS: Record<CambioRegulacion, string> = {
-  NUEVO: "Nuevo regulado",
+  NUEVO: "Nuevo control directo",
   SUBIO: "Subió de regulación",
   BAJO: "Bajó de regulación",
-  SALE: "Sale de regulado",
+  SALE: "Sale de control directo",
   IGUAL: "Continúa con el mismo valor de la 19",
   VALIDAR: "Validar",
-  NO_REGULADO_C22: "No es regulado en la circular 22",
-  NO_REGULADO_C19: "No es regulado en la circular 19",
+  NO_REGULADO_C22: "No es control directo en la circular 22",
+  NO_REGULADO_C19: "No es control directo en la circular 19",
   OTRO: "Otro",
 };
 
@@ -104,15 +104,15 @@ export const PORTAFOLIO_ORDER: PortafolioVsCircular[] = [
 export const PORTAFOLIO_LABELS: Record<PortafolioVsCircular, string> = {
   POR_DEBAJO: "Por debajo de la circular",
   POR_ENCIMA: "Por encima de la circular",
-  LIMITE_REGULADO: "Límite regulado",
+  LIMITE_REGULADO: "Límite de control directo",
   NO_DESCONTINUADO: "No descontinuado",
   DESCONTINUADO: "Descontinuado",
   DESCONTINUADO_COMPRA: "Descontinuado para la compra",
   DESCONTINUADO_VENTA: "Descontinuado para la venta",
-  REGULADO_DESCONTINUADO: "Regulado descontinuado",
-  REGULADO_DESCONTINUADO_COMPRA: "Regulado descontinuado para la compra",
-  REGULADO_DESCONTINUADO_VENTA: "Regulado descontinuado para la venta",
-  NO_REGULADO_C22: "No es regulado en la circular 22",
+  REGULADO_DESCONTINUADO: "Control directo descontinuado",
+  REGULADO_DESCONTINUADO_COMPRA: "Control directo descontinuado para la compra",
+  REGULADO_DESCONTINUADO_VENTA: "Control directo descontinuado para la venta",
+  NO_REGULADO_C22: "No es control directo en la circular 22",
   OTRO: "Otro",
 };
 

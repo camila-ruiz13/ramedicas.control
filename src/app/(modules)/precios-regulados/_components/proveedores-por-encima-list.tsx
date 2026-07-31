@@ -33,7 +33,7 @@ export function ProveedoresPorEncimaList({ groups }: { groups: ProveedorPorEncim
   if (groups.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center text-center text-sm text-muted-foreground">
-        Ningún proveedor tiene productos por encima del precio regulado.
+        Ningún proveedor tiene productos por encima del precio de control directo.
       </div>
     );
   }

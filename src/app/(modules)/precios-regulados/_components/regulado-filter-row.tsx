@@ -23,8 +23,8 @@ export function ReguladoFilterRow({
 
   const options: { key: string; label: string; count: number }[] = [
     { key: "", label: "Todos", count: total },
-    { key: "SI", label: "Regulados", count: regulados },
-    { key: "NO", label: "No regulados", count: noRegulados },
+    { key: "SI", label: "Control directo", count: regulados },
+    { key: "NO", label: "No control directo", count: noRegulados },
   ];
 
   return (
