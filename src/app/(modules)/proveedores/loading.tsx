@@ -18,7 +18,12 @@ export default function Loading() {
       <KpiCardsSkeleton />
       <div className="grid items-start gap-4 lg:grid-cols-[300px_1fr]">
         <DonutSkeleton />
-        <TableSkeleton rows={6} cols={4} />
+        <TableSkeleton rows={6} cols={5} />
+      </div>
+      <div className="rounded-xl border bg-card p-4">
+        <Skeleton className="mb-1 h-4 w-64" />
+        <Skeleton className="mb-3 h-3.5 w-80" />
+        <TableSkeleton rows={5} cols={5} withToolbar={false} />
       </div>
     </div>
   );

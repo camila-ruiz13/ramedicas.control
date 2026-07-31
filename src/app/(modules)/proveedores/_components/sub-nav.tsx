@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { href: "/proveedores", label: "Primera Fase" },
-  { href: "/proveedores/fase-2", label: "Segunda Fase" },
+  { href: "/proveedores", label: "Segunda Fase" },
+  { href: "/proveedores/fase-1", label: "Primera Fase" },
 ];
 
 export function ProveedoresSubNav() {

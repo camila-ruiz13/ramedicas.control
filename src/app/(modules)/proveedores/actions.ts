@@ -232,7 +232,7 @@ export async function sincronizarProveedores() {
   revalidateTag(FASE1_CACHE_TAG, { expire: 0 });
   revalidateTag(FASE2_CACHE_TAG, { expire: 0 });
   revalidatePath("/proveedores");
-  revalidatePath("/proveedores/fase-2");
+  revalidatePath("/proveedores/fase-1");
 
   return resumen;
 }
