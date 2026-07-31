@@ -218,7 +218,12 @@ export async function sincronizarProveedores() {
         },
       };
     },
-    { timeout: 60_000 },
+    // El full-replace (borrar + recrear todo) venía fallando: la hoja ya
+    // creció lo suficiente (183 proveedores, Fase 2 por artículo) para que la
+    // transacción tardara más de los 60s originales — Prisma la aborta con
+    // "Transaction API error: expired transaction" y no queda nada
+    // sincronizado. 5 minutos de margen sobre lo observado (~67s).
+    { timeout: 300_000 },
   );
 
   // Next.js 16 requires a second "profile" argument here even though we're
