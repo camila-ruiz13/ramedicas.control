@@ -45,8 +45,10 @@ export type SiNoPendiente = "SI" | "NO" | "PENDIENTE";
 
 export const SI_NO_PENDIENTE_ORDER: SiNoPendiente[] = ["SI", "NO", "PENDIENTE"];
 
+// "Realizado" en vez de "Sí" porque es literalmente lo que Camila escribe
+// en las columnas H y K de la hoja.
 export const SI_NO_PENDIENTE_LABELS: Record<SiNoPendiente, string> = {
-  SI: "Sí",
+  SI: "Realizado",
   NO: "No",
   PENDIENTE: "Pendiente",
 };
@@ -85,6 +87,9 @@ export type ProrrogaRow = {
   controlDirectoEnviado: SiNoPendiente;
   articulosControlDirecto: number | null;
   fechaInicialControlDirecto: string;
+  // "" cuando la fecha no matchea el patrón "D de mes" — ver
+  // parseFechaInicialISO.
+  fechaInicialISO: string;
   sistemaRealizadoRaw: string;
   sistemaRealizado: SiNoPendiente;
 };
@@ -118,9 +123,44 @@ export function esPendiente(estado: Estado): boolean {
 
 export type EstadoCount = { estado: Estado; count: number };
 
+// Camila escribe "Realizado"/"Pendiente" en las columnas H y K (no
+// "Sí"/"No") — "Realizado" cuenta como el equivalente a "SI". Cualquier
+// otro texto o celda vacía cae en PENDIENTE, nunca se fuerza a NO.
 export function normalizarSiNoPendiente(raw: string): SiNoPendiente {
   const v = normalizar(raw);
-  if (v === "SI" || v === "S") return "SI";
+  if (v === "SI" || v === "S" || v.includes("REALIZADO")) return "SI";
   if (v === "NO" || v === "N") return "NO";
   return "PENDIENTE";
 }
+
+const MESES_ES: Record<string, number> = {
+  ENERO: 1,
+  FEBRERO: 2,
+  MARZO: 3,
+  ABRIL: 4,
+  MAYO: 5,
+  JUNIO: 6,
+  JULIO: 7,
+  AGOSTO: 8,
+  SEPTIEMBRE: 9,
+  SETIEMBRE: 9,
+  OCTUBRE: 10,
+  NOVIEMBRE: 11,
+  DICIEMBRE: 12,
+};
+
+// Columna J ("FECHA INICIAL") trae fechas en español sin año, ej. "19 de
+// agosto" — se asume el año en curso, correcto mientras dure el ciclo de
+// negociación 2025-2026. Devuelve ISO "yyyy-MM-dd" (para ordenar/filtrar) o
+// "" si no matchea el patrón.
+export function parseFechaInicialISO(raw: string): string {
+  const v = normalizar(raw);
+  const m = /^(\d{1,2})\s+DE\s+([A-Z]+)(?:\s+DE\s+(\d{4}))?$/.exec(v);
+  if (!m) return "";
+  const mes = MESES_ES[m[2]];
+  if (!mes) return "";
+  const anio = m[3] ? Number(m[3]) : new Date().getFullYear();
+  return `${anio}-${String(mes).padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+}
+
+export type FechaInicialCount = { fecha: string; fechaISO: string; count: number };

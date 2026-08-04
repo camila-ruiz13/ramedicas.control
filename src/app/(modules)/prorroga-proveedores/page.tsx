@@ -7,11 +7,13 @@ import {
   getProrrogaProveedores,
   applyVistaFilter,
   applyEstadoFilter,
+  applyFechaInicialFilter,
   computeKpis,
   computeEstadoCounts,
   computeControlDirectoEnviadoCounts,
   computeSistemaCounts,
   computeControlDirectoKpis,
+  computeFechaInicialCounts,
   type Vista,
 } from "@/lib/prorroga-proveedores";
 import { ESTADO_LABELS, ESTADO_COLORS, SI_NO_PENDIENTE_LABELS, SI_NO_PENDIENTE_COLORS } from "@/lib/prorroga-proveedores-constants";
@@ -22,6 +24,7 @@ import { EstadoBarChart } from "./_components/estado-bar-chart";
 import { ControlDirectoKpiCards } from "./_components/control-directo-kpi-cards";
 import { VistaTabs } from "./_components/vista-tabs";
 import { EstadoFilterRow } from "./_components/estado-filter-row";
+import { FechaInicialFilterRow } from "./_components/fecha-inicial-filter-row";
 import { DetailTable } from "./_components/detail-table";
 
 const VISTAS: Vista[] = ["todos", "excepcion", "observacion", "pendientes"];
@@ -42,6 +45,7 @@ export default async function ProrrogaProveedoresPage({
   const vistaRaw = one("vista");
   const vista: Vista = VISTAS.includes(vistaRaw as Vista) ? (vistaRaw as Vista) : "todos";
   const estado = one("estado");
+  const fecha = one("fecha");
 
   const all = await getProrrogaProveedores();
   const kpis = computeKpis(all);
@@ -49,9 +53,11 @@ export default async function ProrrogaProveedoresPage({
   const controlDirectoEnviadoCounts = computeControlDirectoEnviadoCounts(all);
   const sistemaCounts = computeSistemaCounts(all);
   const controlDirectoKpis = computeControlDirectoKpis(all);
+  const fechaInicialCounts = computeFechaInicialCounts(all);
 
   const vistaRows = applyVistaFilter(all, vista);
-  const filteredRows = applyEstadoFilter(vistaRows, estado);
+  const estadoFiltered = applyEstadoFilter(vistaRows, estado);
+  const filteredRows = applyFechaInicialFilter(estadoFiltered, fecha);
 
   const params = parsePageParams(sp, { defaultSort: "proveedor", defaultDir: "asc", pageSize: 25 });
   const { rows, page, totalCount, totalPages } = paginate(filteredRows, params, ["proveedor", "nit"]);
@@ -120,6 +126,12 @@ export default async function ProrrogaProveedoresPage({
       <div className="flex flex-col gap-3">
         <VistaTabs vista={vista} />
         {vista === "todos" && <EstadoFilterRow counts={estadoCounts} estado={estado} />}
+        {fechaInicialCounts.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Fecha inicial Control Directo</p>
+            <FechaInicialFilterRow counts={fechaInicialCounts} fecha={fecha} />
+          </div>
+        )}
         <DetailTable
           rows={rows}
           page={page}

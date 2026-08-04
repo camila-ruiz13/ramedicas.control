@@ -7,10 +7,12 @@ import {
   type EstadoCount,
   type SiNoPendiente,
   type SiNoPendienteCount,
+  type FechaInicialCount,
   ESTADO_ORDER,
   SI_NO_PENDIENTE_ORDER,
   normalizarEstado,
   normalizarSiNoPendiente,
+  parseFechaInicialISO,
   esPendiente,
 } from "./prorroga-proveedores-constants";
 
@@ -46,6 +48,7 @@ async function fetchProrrogaRaw(): Promise<ProrrogaRow[]> {
     // 0 engañoso (Number("") es 0, no NaN).
     const articulosCDRaw = String(row[8] ?? "").trim();
     const sistemaRealizadoRaw = String(row[10] ?? "").trim();
+    const fechaInicialControlDirecto = String(row[9] ?? "").trim();
     rows.push({
       proveedor,
       nit: String(row[1] ?? "").trim(),
@@ -58,7 +61,8 @@ async function fetchProrrogaRaw(): Promise<ProrrogaRow[]> {
       controlDirectoEnviadoRaw,
       controlDirectoEnviado: normalizarSiNoPendiente(controlDirectoEnviadoRaw),
       articulosControlDirecto: articulosCDRaw && Number.isFinite(Number(articulosCDRaw)) ? Number(articulosCDRaw) : null,
-      fechaInicialControlDirecto: String(row[9] ?? "").trim(),
+      fechaInicialControlDirecto,
+      fechaInicialISO: parseFechaInicialISO(fechaInicialControlDirecto),
       sistemaRealizadoRaw,
       sistemaRealizado: normalizarSiNoPendiente(sistemaRealizadoRaw),
     });
@@ -97,6 +101,14 @@ export function applyEstadoFilter(rows: ProrrogaRow[], estado?: string): Prorrog
   return rows.filter((r) => r.estado === estado);
 }
 
+// Filtra por el texto exacto de la columna J (ej. "19 de agosto") — no por
+// la fecha ISO, para que cada chip del filtro corresponda uno a uno con lo
+// que Camila escribió en la hoja.
+export function applyFechaInicialFilter(rows: ProrrogaRow[], fecha?: string): ProrrogaRow[] {
+  if (!fecha) return rows;
+  return rows.filter((r) => r.fechaInicialControlDirecto === fecha);
+}
+
 // ---------- Agregaciones ----------
 
 export function computeKpis(rows: ProrrogaRow[]) {
@@ -123,6 +135,28 @@ export function computeSistemaCounts(rows: ProrrogaRow[]): SiNoPendienteCount[] 
   const conteo = Object.fromEntries(SI_NO_PENDIENTE_ORDER.map((e) => [e, 0])) as Record<SiNoPendiente, number>;
   for (const r of rows) conteo[r.sistemaRealizado]++;
   return SI_NO_PENDIENTE_ORDER.map((estado) => ({ estado, count: conteo[estado] })).filter((c) => c.count > 0);
+}
+
+// Agrupa por el texto exacto de la fecha (columna J), ordenado
+// cronológicamente vía fechaISO cuando se pudo parsear; las fechas que no
+// matchearon el patrón quedan al final, ordenadas alfabéticamente entre
+// ellas — mejor que perderlas del filtro.
+export function computeFechaInicialCounts(rows: ProrrogaRow[]): FechaInicialCount[] {
+  const porFecha = new Map<string, { fechaISO: string; count: number }>();
+  for (const r of rows) {
+    if (!r.fechaInicialControlDirecto) continue;
+    const entry = porFecha.get(r.fechaInicialControlDirecto);
+    if (entry) entry.count++;
+    else porFecha.set(r.fechaInicialControlDirecto, { fechaISO: r.fechaInicialISO, count: 1 });
+  }
+  return [...porFecha.entries()]
+    .map(([fecha, { fechaISO, count }]) => ({ fecha, fechaISO, count }))
+    .sort((a, b) => {
+      if (a.fechaISO && b.fechaISO) return a.fechaISO.localeCompare(b.fechaISO);
+      if (a.fechaISO) return -1;
+      if (b.fechaISO) return 1;
+      return a.fecha.localeCompare(b.fecha);
+    });
 }
 
 export function computeControlDirectoKpis(rows: ProrrogaRow[]) {
