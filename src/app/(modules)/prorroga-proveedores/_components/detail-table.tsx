@@ -43,34 +43,34 @@ export function DetailTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <SortableHead field="proveedor" initialField={sortField} initialDir={sortDir}>
+              <SortableHead field="proveedor" initialField={sortField} initialDir={sortDir} className="text-center">
                 Proveedor
               </SortableHead>
-              <SortableHead field="nit" initialField={sortField} initialDir={sortDir}>
+              <SortableHead field="nit" initialField={sortField} initialDir={sortDir} className="text-center">
                 NIT
               </SortableHead>
-              <SortableHead field="estado" initialField={sortField} initialDir={sortDir}>
+              <SortableHead field="estado" initialField={sortField} initialDir={sortDir} className="text-center">
                 Estado
               </SortableHead>
-              <SortableHead field="excepcion" initialField={sortField} initialDir={sortDir}>
+              <SortableHead field="excepcion" initialField={sortField} initialDir={sortDir} className="text-center">
                 Excepción
               </SortableHead>
-              <SortableHead field="observacion" initialField={sortField} initialDir={sortDir}>
+              <SortableHead field="observacion" initialField={sortField} initialDir={sortDir} className="text-center">
                 Observación
               </SortableHead>
-              <SortableHead field="numeroArticulos" initialField={sortField} initialDir={sortDir} className="text-right">
+              <SortableHead field="numeroArticulos" initialField={sortField} initialDir={sortDir} className="text-center">
                 Códigos
               </SortableHead>
-              <SortableHead field="controlDirectoEnviado" initialField={sortField} initialDir={sortDir}>
+              <SortableHead field="controlDirectoEnviado" initialField={sortField} initialDir={sortDir} className="text-center">
                 Control Directo
               </SortableHead>
-              <SortableHead field="articulosControlDirecto" initialField={sortField} initialDir={sortDir} className="text-right">
+              <SortableHead field="articulosControlDirecto" initialField={sortField} initialDir={sortDir} className="text-center">
                 Códigos CD
               </SortableHead>
-              <SortableHead field="fechaInicialControlDirecto" initialField={sortField} initialDir={sortDir}>
+              <SortableHead field="fechaInicialControlDirecto" initialField={sortField} initialDir={sortDir} className="text-center">
                 Fecha Inicial
               </SortableHead>
-              <SortableHead field="sistemaRealizado" initialField={sortField} initialDir={sortDir}>
+              <SortableHead field="sistemaRealizado" initialField={sortField} initialDir={sortDir} className="text-center">
                 Sistema
               </SortableHead>
             </TableRow>
@@ -88,31 +88,31 @@ export function DetailTable({
                 <TableCell className="max-w-64 truncate font-medium" title={r.proveedor}>
                   {r.proveedor}
                 </TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">{r.nit}</TableCell>
-                <TableCell>
+                <TableCell className="text-center font-mono text-xs text-muted-foreground">{r.nit}</TableCell>
+                <TableCell className="text-center">
                   <Badge variant="outline" className={cn("border-none", ESTADO_BADGE_CLASSES[r.estado])}>
                     {ESTADO_LABELS[r.estado]}
                   </Badge>
                 </TableCell>
-                <TableCell className="max-w-56 whitespace-normal break-words text-muted-foreground">
+                <TableCell className="max-w-56 whitespace-normal break-words text-center text-muted-foreground">
                   {r.excepcion || "—"}
                 </TableCell>
                 <TableCell className="max-w-72 whitespace-normal break-words text-muted-foreground">
                   {r.observacion || "—"}
                 </TableCell>
-                <TableCell className="text-right font-mono" title={r.numeroArticulos === null ? "No disponible (VLOOKUP sin coincidencia en la hoja)" : undefined}>
+                <TableCell className="text-center font-mono" title={r.numeroArticulos === null ? "No disponible (VLOOKUP sin coincidencia en la hoja)" : undefined}>
                   {r.numeroArticulos === null ? "—" : fmtNum.format(r.numeroArticulos)}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-center">
                   <Badge variant="outline" className={cn("border-none", SI_NO_PENDIENTE_BADGE_CLASSES[r.controlDirectoEnviado])}>
                     {SI_NO_PENDIENTE_LABELS[r.controlDirectoEnviado]}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right font-mono">
+                <TableCell className="text-center font-mono">
                   {r.articulosControlDirecto === null ? "—" : fmtNum.format(r.articulosControlDirecto)}
                 </TableCell>
-                <TableCell className="text-muted-foreground">{r.fechaInicialControlDirecto || "—"}</TableCell>
-                <TableCell>
+                <TableCell className="text-center text-muted-foreground">{r.fechaInicialControlDirecto || "—"}</TableCell>
+                <TableCell className="text-center">
                   <Badge variant="outline" className={cn("border-none", SI_NO_PENDIENTE_BADGE_CLASSES[r.sistemaRealizado])}>
                     {SI_NO_PENDIENTE_LABELS[r.sistemaRealizado]}
                   </Badge>
