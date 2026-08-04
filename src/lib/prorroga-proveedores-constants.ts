@@ -37,6 +37,34 @@ export const ESTADO_BADGE_CLASSES: Record<Estado, string> = {
   OTRO: "bg-violet-500/15 text-violet-700 dark:text-violet-400",
 };
 
+// Columnas H y K son el mismo patrón Sí/No/Pendiente (vacío = pendiente),
+// a diferencia de Estado (columna C) que tiene más categorías — se
+// reutilizan los mismos componentes de gráfica para ambas parametrizando
+// labels/colores en vez de duplicar EstadoDonut/EstadoBarChart.
+export type SiNoPendiente = "SI" | "NO" | "PENDIENTE";
+
+export const SI_NO_PENDIENTE_ORDER: SiNoPendiente[] = ["SI", "NO", "PENDIENTE"];
+
+export const SI_NO_PENDIENTE_LABELS: Record<SiNoPendiente, string> = {
+  SI: "Sí",
+  NO: "No",
+  PENDIENTE: "Pendiente",
+};
+
+export const SI_NO_PENDIENTE_COLORS: Record<SiNoPendiente, string> = {
+  SI: "#22c55e",
+  NO: "#ef4444",
+  PENDIENTE: "#eab308",
+};
+
+export const SI_NO_PENDIENTE_BADGE_CLASSES: Record<SiNoPendiente, string> = {
+  SI: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+  NO: "bg-red-500/15 text-red-700 dark:text-red-400",
+  PENDIENTE: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+};
+
+export type SiNoPendienteCount = { estado: SiNoPendiente; count: number };
+
 export type ProrrogaRow = {
   proveedor: string;
   nit: string;
@@ -49,6 +77,16 @@ export type ProrrogaRow = {
   // #N/A para varios proveedores cuyo nombre no matchea exacto en la tabla
   // de origen — null en esos casos, no un dato nuestro que se pueda arreglar.
   numeroArticulos: number | null;
+  // Columnas H, I, J, K agregadas por Camila (2026-08-04) para trazabilidad
+  // de Control Directo: si ya enviaron el documento, cuántos códigos tienen
+  // en control directo, desde cuándo, y si ya quedó registrado en el
+  // sistema.
+  controlDirectoEnviadoRaw: string;
+  controlDirectoEnviado: SiNoPendiente;
+  articulosControlDirecto: number | null;
+  fechaInicialControlDirecto: string;
+  sistemaRealizadoRaw: string;
+  sistemaRealizado: SiNoPendiente;
 };
 
 // Misma normalización del script original: sin tildes, mayúsculas, trim.
@@ -79,3 +117,10 @@ export function esPendiente(estado: Estado): boolean {
 }
 
 export type EstadoCount = { estado: Estado; count: number };
+
+export function normalizarSiNoPendiente(raw: string): SiNoPendiente {
+  const v = normalizar(raw);
+  if (v === "SI" || v === "S") return "SI";
+  if (v === "NO" || v === "N") return "NO";
+  return "PENDIENTE";
+}

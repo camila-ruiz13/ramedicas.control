@@ -7,9 +7,20 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { ESTADO_LABELS, ESTADO_COLORS, type EstadoCount } from "@/lib/prorroga-proveedores-constants";
+type Item = { estado: string; count: number };
 
-export function EstadoDonut({ counts }: { counts: EstadoCount[] }) {
+// Parametrizado por labels/colores (en vez de importar ESTADO_LABELS
+// directo) para poder reutilizarlo también con SI_NO_PENDIENTE_LABELS en
+// las gráficas de Control Directo, sin duplicar este componente.
+export function EstadoDonut({
+  counts,
+  labels,
+  colors,
+}: {
+  counts: Item[];
+  labels: Record<string, string>;
+  colors: Record<string, string>;
+}) {
   if (counts.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
@@ -18,9 +29,9 @@ export function EstadoDonut({ counts }: { counts: EstadoCount[] }) {
     );
   }
 
-  const data = counts.map((c) => ({ label: ESTADO_LABELS[c.estado], value: c.count, fill: ESTADO_COLORS[c.estado] }));
+  const data = counts.map((c) => ({ label: labels[c.estado], value: c.count, fill: colors[c.estado] }));
   const config: ChartConfig = Object.fromEntries(
-    counts.map((c) => [ESTADO_LABELS[c.estado], { label: ESTADO_LABELS[c.estado], color: ESTADO_COLORS[c.estado] }]),
+    counts.map((c) => [labels[c.estado], { label: labels[c.estado], color: colors[c.estado] }]),
   );
   const total = data.reduce((s, d) => s + d.value, 0);
 

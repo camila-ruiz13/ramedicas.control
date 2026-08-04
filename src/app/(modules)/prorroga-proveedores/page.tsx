@@ -9,12 +9,17 @@ import {
   applyEstadoFilter,
   computeKpis,
   computeEstadoCounts,
+  computeControlDirectoEnviadoCounts,
+  computeSistemaCounts,
+  computeControlDirectoKpis,
   type Vista,
 } from "@/lib/prorroga-proveedores";
+import { ESTADO_LABELS, ESTADO_COLORS, SI_NO_PENDIENTE_LABELS, SI_NO_PENDIENTE_COLORS } from "@/lib/prorroga-proveedores-constants";
 import { actualizarProrroga } from "./actions";
 import { KpiCards } from "./_components/kpi-cards";
 import { EstadoDonut } from "./_components/estado-donut";
 import { EstadoBarChart } from "./_components/estado-bar-chart";
+import { ControlDirectoKpiCards } from "./_components/control-directo-kpi-cards";
 import { VistaTabs } from "./_components/vista-tabs";
 import { EstadoFilterRow } from "./_components/estado-filter-row";
 import { DetailTable } from "./_components/detail-table";
@@ -41,6 +46,9 @@ export default async function ProrrogaProveedoresPage({
   const all = await getProrrogaProveedores();
   const kpis = computeKpis(all);
   const estadoCounts = computeEstadoCounts(all);
+  const controlDirectoEnviadoCounts = computeControlDirectoEnviadoCounts(all);
+  const sistemaCounts = computeSistemaCounts(all);
+  const controlDirectoKpis = computeControlDirectoKpis(all);
 
   const vistaRows = applyVistaFilter(all, vista);
   const filteredRows = applyEstadoFilter(vistaRows, estado);
@@ -75,11 +83,37 @@ export default async function ProrrogaProveedoresPage({
       <div className="grid min-w-0 items-start gap-4 lg:grid-cols-2">
         <div className="min-w-0 rounded-xl border bg-card p-4">
           <h3 className="mb-3 text-sm font-semibold">Por categoría</h3>
-          <EstadoDonut counts={estadoCounts} />
+          <EstadoDonut counts={estadoCounts} labels={ESTADO_LABELS} colors={ESTADO_COLORS} />
         </div>
         <div className="min-w-0 rounded-xl border bg-card p-4">
           <h3 className="mb-3 text-sm font-semibold">Cantidad por respuesta</h3>
-          <EstadoBarChart counts={estadoCounts} />
+          <EstadoBarChart counts={estadoCounts} labels={ESTADO_LABELS} colors={ESTADO_COLORS} />
+        </div>
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-4">
+        <div>
+          <h2 className="font-heading text-lg font-bold tracking-tight">Control Directo</h2>
+          <p className="text-sm text-muted-foreground">
+            Trazabilidad del documento de Control Directo por proveedor: envío, códigos y registro en el sistema.
+          </p>
+        </div>
+
+        <ControlDirectoKpiCards
+          enviado={controlDirectoKpis.enviado}
+          sistema={controlDirectoKpis.sistema}
+          totalArticulos={controlDirectoKpis.totalArticulos}
+        />
+
+        <div className="grid min-w-0 items-start gap-4 lg:grid-cols-2">
+          <div className="min-w-0 rounded-xl border bg-card p-4">
+            <h3 className="mb-3 text-sm font-semibold">¿Ya enviaron documento de Control Directo?</h3>
+            <EstadoDonut counts={controlDirectoEnviadoCounts} labels={SI_NO_PENDIENTE_LABELS} colors={SI_NO_PENDIENTE_COLORS} />
+          </div>
+          <div className="min-w-0 rounded-xl border bg-card p-4">
+            <h3 className="mb-3 text-sm font-semibold">¿Ya se realizó en el sistema?</h3>
+            <EstadoBarChart counts={sistemaCounts} labels={SI_NO_PENDIENTE_LABELS} colors={SI_NO_PENDIENTE_COLORS} />
+          </div>
         </div>
       </div>
 

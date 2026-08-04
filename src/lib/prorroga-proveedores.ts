@@ -5,8 +5,12 @@ import {
   type ProrrogaRow,
   type Estado,
   type EstadoCount,
+  type SiNoPendiente,
+  type SiNoPendienteCount,
   ESTADO_ORDER,
+  SI_NO_PENDIENTE_ORDER,
   normalizarEstado,
+  normalizarSiNoPendiente,
   esPendiente,
 } from "./prorroga-proveedores-constants";
 
@@ -37,6 +41,11 @@ async function fetchProrrogaRaw(): Promise<ProrrogaRow[]> {
     // matchea exacto en la tabla de origen. Number() de eso da NaN, que
     // tratamos como "sin dato" en vez de forzar un 0 engañoso.
     const numeroArticulosRaw = Number(String(row[6] ?? "").trim());
+    const controlDirectoEnviadoRaw = String(row[7] ?? "").trim();
+    // Columna I: igual que la G, se deja null en celdas vacías en vez de un
+    // 0 engañoso (Number("") es 0, no NaN).
+    const articulosCDRaw = String(row[8] ?? "").trim();
+    const sistemaRealizadoRaw = String(row[10] ?? "").trim();
     rows.push({
       proveedor,
       nit: String(row[1] ?? "").trim(),
@@ -46,6 +55,12 @@ async function fetchProrrogaRaw(): Promise<ProrrogaRow[]> {
       observacion: String(row[4] ?? "").trim(),
       anexo: String(row[5] ?? "").trim(),
       numeroArticulos: Number.isFinite(numeroArticulosRaw) ? numeroArticulosRaw : null,
+      controlDirectoEnviadoRaw,
+      controlDirectoEnviado: normalizarSiNoPendiente(controlDirectoEnviadoRaw),
+      articulosControlDirecto: articulosCDRaw && Number.isFinite(Number(articulosCDRaw)) ? Number(articulosCDRaw) : null,
+      fechaInicialControlDirecto: String(row[9] ?? "").trim(),
+      sistemaRealizadoRaw,
+      sistemaRealizado: normalizarSiNoPendiente(sistemaRealizadoRaw),
     });
   }
   return rows;
@@ -94,4 +109,30 @@ export function computeEstadoCounts(rows: ProrrogaRow[]): EstadoCount[] {
   const conteo = Object.fromEntries(ESTADO_ORDER.map((e) => [e, 0])) as Record<Estado, number>;
   for (const r of rows) conteo[r.estado]++;
   return ESTADO_ORDER.map((estado) => ({ estado, count: conteo[estado] })).filter((c) => c.count > 0);
+}
+
+// ---------- Control Directo (columnas H, I, J, K) ----------
+
+export function computeControlDirectoEnviadoCounts(rows: ProrrogaRow[]): SiNoPendienteCount[] {
+  const conteo = Object.fromEntries(SI_NO_PENDIENTE_ORDER.map((e) => [e, 0])) as Record<SiNoPendiente, number>;
+  for (const r of rows) conteo[r.controlDirectoEnviado]++;
+  return SI_NO_PENDIENTE_ORDER.map((estado) => ({ estado, count: conteo[estado] })).filter((c) => c.count > 0);
+}
+
+export function computeSistemaCounts(rows: ProrrogaRow[]): SiNoPendienteCount[] {
+  const conteo = Object.fromEntries(SI_NO_PENDIENTE_ORDER.map((e) => [e, 0])) as Record<SiNoPendiente, number>;
+  for (const r of rows) conteo[r.sistemaRealizado]++;
+  return SI_NO_PENDIENTE_ORDER.map((estado) => ({ estado, count: conteo[estado] })).filter((c) => c.count > 0);
+}
+
+export function computeControlDirectoKpis(rows: ProrrogaRow[]) {
+  const conteoEnviado = Object.fromEntries(SI_NO_PENDIENTE_ORDER.map((e) => [e, 0])) as Record<SiNoPendiente, number>;
+  const conteoSistema = Object.fromEntries(SI_NO_PENDIENTE_ORDER.map((e) => [e, 0])) as Record<SiNoPendiente, number>;
+  let totalArticulos = 0;
+  for (const r of rows) {
+    conteoEnviado[r.controlDirectoEnviado]++;
+    conteoSistema[r.sistemaRealizado]++;
+    totalArticulos += r.articulosControlDirecto ?? 0;
+  }
+  return { enviado: conteoEnviado, sistema: conteoSistema, totalArticulos };
 }
