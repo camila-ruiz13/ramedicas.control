@@ -15,6 +15,7 @@ import {
   esAumento,
   esDisminucion,
   esRealizado,
+  fmtPct,
   type CambioPrecioRow,
 } from "@/lib/cambios-precios-constants";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,9 @@ export function DetailTable({
               <SortableHead field="nuevo" initialField={sortField} initialDir={sortDir}>
                 Nuevo
               </SortableHead>
+              <SortableHead field="variacionPct" initialField={sortField} initialDir={sortDir} className="text-right">
+                Variación
+              </SortableHead>
               <SortableHead field="listaRaw" initialField={sortField} initialDir={sortDir}>
                 Listas de Precios
               </SortableHead>
@@ -78,7 +82,7 @@ export function DetailTable({
           <TableBody>
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground">
+                <TableCell colSpan={11} className="text-center text-muted-foreground">
                   No se encontraron registros.
                 </TableCell>
               </TableRow>
@@ -112,6 +116,15 @@ export function DetailTable({
                   </TableCell>
                   <TableCell className="text-right font-mono">{r.anteriorRaw || "—"}</TableCell>
                   <TableCell className="text-right font-mono">{r.nuevoRaw || "—"}</TableCell>
+                  <TableCell
+                    className={cn(
+                      "text-right font-mono",
+                      r.variacionPct !== null && r.variacionPct > 0 && "text-red-600 dark:text-red-400",
+                      r.variacionPct !== null && r.variacionPct < 0 && "text-emerald-600 dark:text-emerald-400",
+                    )}
+                  >
+                    {r.variacionPct !== null ? fmtPct(r.variacionPct) : "—"}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
