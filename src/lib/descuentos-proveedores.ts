@@ -43,9 +43,17 @@ function excelDateToUTC(value: unknown): Date | null {
   return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
 }
 
-// ---------- COMPRAS (.xlsx, uno por mes, encabezados en la fila 4) ----------
+// ---------- COMPRAS (.xlsx único consolidado, encabezados en la fila 1) ----------
 
-const COMPRA_HEADER_ROW = 4;
+// Antes era una carpeta con un archivo .xlsx por mes (headers en la fila
+// 4) — Camila los reemplazó (2026-08-05) por un único archivo que ella
+// misma va actualizando, así que ya no hace falta "ir a validar todos los
+// meses". El libro trae además hojas de análisis propio (tablas dinámicas)
+// antes de la hoja real de datos, así que se busca la hoja por nombre en
+// vez de asumir worksheets[0].
+const COMPRA_FILE = path.join(COMPRA_DIR, "CONSOLIDADO COMPRAS.xlsx");
+const COMPRA_SHEET_NAME = "CONSOLIDADO COMPRAS";
+const COMPRA_HEADER_ROW = 1;
 const COMPRA_HEADERS = {
   numero: ["Número"],
   fechaFactura: ["Fecha Factura"],
@@ -75,7 +83,10 @@ export type ParsedCompraLinea = {
 async function parseComprasFile(filePath: string): Promise<ParsedCompraLinea[]> {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(filePath);
-  const sheet = wb.worksheets[0];
+  const sheet = wb.worksheets.find((s) => s.name.trim().toUpperCase() === COMPRA_SHEET_NAME);
+  if (!sheet) {
+    throw new Error(`No se encontró la hoja "${COMPRA_SHEET_NAME}" en ${filePath}`);
+  }
 
   const headerRow = sheet.getRow(COMPRA_HEADER_ROW);
   const headers: string[] = [];
@@ -110,10 +121,7 @@ async function parseComprasFile(filePath: string): Promise<ParsedCompraLinea[]> 
 }
 
 export async function parseAllCompras(): Promise<ParsedCompraLinea[]> {
-  const files = listDataFiles(COMPRA_DIR, ".xlsx");
-  const all: ParsedCompraLinea[] = [];
-  for (const file of files) all.push(...(await parseComprasFile(file)));
-  return all;
+  return parseComprasFile(COMPRA_FILE);
 }
 
 // ---------- PREDEVOLUCIONES (.xls legacy, uno por mes, encabezados fila 4) ----------
