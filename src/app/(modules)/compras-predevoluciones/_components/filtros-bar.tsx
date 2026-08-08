@@ -26,12 +26,18 @@ export function FiltrosBar({
   mes,
   proveedores,
   nit,
+  codigos,
+  codigo = "",
 }: {
   anios: string[];
   anio: string;
   mes: string;
   proveedores: { nit: string; nombre: string }[];
   nit: string;
+  // Solo la pestaña Compras pasa esto — Predevoluciones no tiene filtro de
+  // código todavía.
+  codigos?: { codigo: string; articulo: string }[];
+  codigo?: string;
 }) {
   const { update, isPending } = useQueryParams();
 
@@ -62,9 +68,28 @@ export function FiltrosBar({
     }
   }
 
+  // Mismo patrón que Proveedor — el valor visible combina código + nombre
+  // para poder buscar por cualquiera de los dos, y se resuelve al código
+  // exacto al seleccionar/matchear una opción del datalist.
+  const labelDeCodigo = (c: { codigo: string; articulo: string }) => `${c.codigo} - ${c.articulo}`;
+  const codigoPorLabel = new Map((codigos ?? []).map((c) => [labelDeCodigo(c), c.codigo]));
+  const labelPorCodigo = new Map((codigos ?? []).map((c) => [c.codigo, labelDeCodigo(c)]));
+  const [codigoInput, setCodigoInput] = useState(codigo ? (labelPorCodigo.get(codigo) ?? codigo) : "");
+
+  function onCodigoChange(value: string) {
+    setCodigoInput(value);
+    const trimmed = value.trim();
+    if (trimmed === "") {
+      update({ codigo: null, page: null });
+    } else if (codigoPorLabel.has(trimmed)) {
+      update({ codigo: codigoPorLabel.get(trimmed)!, page: null });
+    }
+  }
+
   function restablecer() {
     setProveedorInput("");
-    update({ anio: null, mes: null, nit: null, q: null, page: null });
+    setCodigoInput("");
+    update({ anio: null, mes: null, nit: null, codigo: null, q: null, page: null });
   }
 
   return (
@@ -122,6 +147,26 @@ export function FiltrosBar({
           ))}
         </datalist>
       </div>
+
+      {codigos && (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Código
+          </label>
+          <Input
+            list="compras-codigos"
+            placeholder="Todos los códigos"
+            value={codigoInput}
+            onChange={(e) => onCodigoChange(e.target.value)}
+            className="w-64"
+          />
+          <datalist id="compras-codigos">
+            {codigos.map((c) => (
+              <option key={c.codigo} value={labelDeCodigo(c)} />
+            ))}
+          </datalist>
+        </div>
+      )}
 
       {isPending && <Spinner className="size-4 text-muted-foreground" />}
 

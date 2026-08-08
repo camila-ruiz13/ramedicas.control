@@ -4,6 +4,7 @@ import { parsePageParams, paginate } from "@/lib/pagination";
 import {
   getAniosDisponibles,
   getTodosLosProveedores,
+  getCodigosDisponibles,
   getComprasDashboard,
 } from "@/lib/compras-predevoluciones";
 import { ComprasSubNav } from "./_components/sub-nav";
@@ -28,11 +29,18 @@ export default async function ComprasPage({
   const anio = one("anio");
   const mes = one("mes");
   const nit = one("nit");
+  const codigo = one("codigo");
 
-  const [anios, proveedores, dashboard] = await Promise.all([
+  const [anios, proveedores, codigos, dashboard] = await Promise.all([
     getAniosDisponibles(),
     getTodosLosProveedores(),
-    getComprasDashboard({ anio: anio || undefined, mes: mes || undefined, nit: nit || undefined }),
+    getCodigosDisponibles(nit || undefined),
+    getComprasDashboard({
+      anio: anio || undefined,
+      mes: mes || undefined,
+      nit: nit || undefined,
+      codigo: codigo || undefined,
+    }),
   ]);
 
   const params = parsePageParams(sp, { defaultSort: "fechaFactura", defaultDir: "desc", pageSize: 25 });
@@ -57,7 +65,15 @@ export default async function ComprasPage({
 
       <ComprasSubNav />
 
-      <FiltrosBar anios={anios} anio={anio} mes={mes} proveedores={proveedores} nit={nit} />
+      <FiltrosBar
+        anios={anios}
+        anio={anio}
+        mes={mes}
+        proveedores={proveedores}
+        nit={nit}
+        codigos={codigos}
+        codigo={codigo}
+      />
 
       <KpiCardsCompras {...dashboard.kpis} />
 
@@ -66,9 +82,20 @@ export default async function ComprasPage({
         <EvolucionChart anios={dashboard.evolucion.anios} puntos={dashboard.evolucion.puntos} unidad="money" />
       </div>
 
-      {nit ? (
+      {nit || codigo ? (
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold">Desglose de compras — {proveedores.find((p) => p.nit === nit)?.nombre ?? nit}</h3>
+          <h3 className="text-sm font-semibold">
+            Desglose de compras —{" "}
+            {[
+              nit ? (proveedores.find((p) => p.nit === nit)?.nombre ?? nit) : null,
+              // El nombre sale de las líneas ya traídas (dashboard.detalle), no
+              // de `codigos` — esa lista ahora puede estar acotada al
+              // proveedor elegido y no incluir el código seleccionado.
+              codigo ? `${codigo} — ${dashboard.detalle[0]?.articulo ?? ""}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </h3>
           <DetailTableCompras
             rows={rows}
             page={page}
@@ -81,7 +108,7 @@ export default async function ComprasPage({
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Selecciona un proveedor en los filtros para ver el desglose de sus compras línea por línea.
+          Selecciona un proveedor o un código en los filtros para ver el desglose de compras línea por línea.
         </p>
       )}
     </div>

@@ -19,7 +19,7 @@ export function nombreMes(mes: string): string {
   return NOMBRES_MES[mesIndiceDeMes(mes)] ?? mes;
 }
 
-export type Filtro = { anio?: string; mes?: string; nit?: string };
+export type Filtro = { anio?: string; mes?: string; nit?: string; codigo?: string };
 
 // "YYYY-MM" completo si hay año+mes, prefijo "YYYY-" si solo hay año, o
 // "-MM" al final (cualquier año, ej. comparar julio de todos los años) si
@@ -43,6 +43,19 @@ export async function getTodosLosProveedores(): Promise<{ nit: string; nombre: s
     orderBy: { nombreProveedor: "asc" },
   });
   return rows.map((r) => ({ nit: r.nitProveedor, nombre: r.nombreProveedor }));
+}
+
+// ~4.400 códigos distintos en todo el portafolio — demasiados para un
+// datalist sin acotar. Si hay un proveedor elegido, se limita a los
+// códigos que ese proveedor efectivamente vende (baja a un puñado).
+export async function getCodigosDisponibles(nit?: string): Promise<{ codigo: string; articulo: string }[]> {
+  const rows = await prisma.compraLinea.findMany({
+    where: nit ? { nitProveedor: nit } : undefined,
+    distinct: ["codigo"],
+    select: { codigo: true, articulo: true },
+    orderBy: { codigo: "asc" },
+  });
+  return rows;
 }
 
 export type EvolucionPunto = { mesIndex: number; mesLabel: string; porAnio: Record<string, number> };
@@ -75,7 +88,11 @@ export type CompraDetalleRow = {
 };
 
 export async function getComprasDashboard(filtro: Filtro) {
-  const where = { ...whereMes(filtro), ...(filtro.nit ? { nitProveedor: filtro.nit } : {}) };
+  const where = {
+    ...whereMes(filtro),
+    ...(filtro.nit ? { nitProveedor: filtro.nit } : {}),
+    ...(filtro.codigo ? { codigo: filtro.codigo } : {}),
+  };
 
   const [agg, facturas, proveedores, porMes] = await Promise.all([
     prisma.compraLinea.aggregate({ where, _sum: { subtotal: true, unidades: true }, _count: { _all: true } }),
@@ -86,8 +103,11 @@ export async function getComprasDashboard(filtro: Filtro) {
 
   const { anios, puntos } = armarEvolucion(porMes.map((p) => ({ mes: p.mes, valor: Number(p._sum.subtotal ?? 0) })));
 
+  // Línea por línea solo se trae cuando hay un filtro específico (proveedor
+  // o código) — con ~67k líneas totales, sin acotar sería demasiado para
+  // mostrar de una.
   let detalle: CompraDetalleRow[] = [];
-  if (filtro.nit) {
+  if (filtro.nit || filtro.codigo) {
     const rows = await prisma.compraLinea.findMany({ where, orderBy: { fechaFactura: "desc" } });
     detalle = rows.map((r) => ({ ...r, subtotal: Number(r.subtotal) }));
   }
