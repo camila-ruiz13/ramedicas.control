@@ -51,7 +51,21 @@ export default async function PortafolioVsCircularPage({
   const portafolio = one("portafolio");
 
   const { rows: all, totalPortafolio } = await getPreciosRegulados();
-  const [envioRows, nitPorCodigo] = await Promise.all([getProveedoresEnvio(), getNitPorCodigo()]);
+  // Si falla la lectura de "proveedores" o de "PORTAFOLIO ..." (ej. la
+  // pestaña no existe todavía, o Camila la está resubiendo en ese momento),
+  // que degrade a "sin dato de envío" en vez de tumbar toda la página — lo
+  // demás (todo lo que ya funcionaba antes de esta función) no depende de
+  // estas dos hojas.
+  const [envioRows, nitPorCodigo] = await Promise.all([
+    getProveedoresEnvio().catch((err) => {
+      console.error("No se pudo leer la hoja 'proveedores':", err);
+      return [];
+    }),
+    getNitPorCodigo().catch((err) => {
+      console.error("No se pudo leer la pestaña 'PORTAFOLIO ...':", err);
+      return new Map<string, string>();
+    }),
+  ]);
   const codigoEnvioInfo = buildCodigoEnvioInfo(all.map((r) => r.codigo), nitPorCodigo, envioRows);
 
   // Filtro de primer nivel (Todos/Regulados/No regulados) — a pedido de
