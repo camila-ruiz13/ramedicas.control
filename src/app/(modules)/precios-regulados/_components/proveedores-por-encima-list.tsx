@@ -138,6 +138,7 @@ export function ProveedoresPorEncimaList({
                   <thead className="sticky top-0 bg-card">
                     <tr className="text-xs text-muted-foreground">
                       <th className="p-2.5 text-left font-medium">Producto</th>
+                      <th className="p-2.5 text-left font-medium">Descontinuado</th>
                       <th className="p-2.5 text-right font-medium">Costo (portafolio)</th>
                       <th className="p-2.5 text-right font-medium">Precio circular 22</th>
                       <th className="p-2.5 text-right font-medium">Diferencia</th>
@@ -156,6 +157,15 @@ export function ProveedoresPorEncimaList({
                           <td className="min-w-0 max-w-56 truncate p-2.5" title={p.nombreComercial || p.principioActivo}>
                             <span className="font-mono text-xs text-muted-foreground">{p.codigo}</span>{" "}
                             {p.nombreComercial || p.principioActivo || "—"}
+                          </td>
+                          <td className="p-2.5">
+                            {p.descontinuado ? (
+                              <Badge variant="outline" className="border-none bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                                Sí
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">No</span>
+                            )}
                           </td>
                           <td className="p-2.5 text-right font-mono">
                             {p.costo === null ? "—" : fmtCOP.format(p.costo)}

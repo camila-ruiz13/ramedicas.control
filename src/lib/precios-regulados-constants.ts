@@ -163,6 +163,11 @@ export type PrecioReguladoRow = {
   principioActivo: string;
   laboratorio: string;
   costo: number | null;
+  // Columna Q de VALIDACIÓN: "S" = descontinuado. A pedido de Camila
+  // (2026-08-12), para mostrarlo en el detalle de productos por proveedor —
+  // es un dato aparte de portafolioVsCircular (esa se arma con texto libre
+  // de otra columna, ej. DESCONTINUADO_COMPRA/VENTA).
+  descontinuado: boolean;
   // A pedido de Camila (2026-07-29): la hoja ya no trae un precio de
   // circular 19 separado, así que este campo se llena con "PRECIO MÁX EMB"
   // como el precio a mostrar en esa columna de la pestaña Circular 19 vs 22.

@@ -45,6 +45,11 @@ const HEADER_VARIANTS = {
   circular22: ["Circular 22 emb"],
   cambioRegulacion: ["Cambio regulación 19 vs 22", "Cambio regulacion 19 vs 22"],
   portafolioVsCircular: ["Portafolio vs circular 22"],
+  // Columna "DC" (2026-08-12) — "S" = descontinuado. Se buscaba antes por
+  // posición fija (letra Q), pero esa hoja mueve columnas de sitio con el
+  // tiempo — RC0079 quedó mal leído por eso, así que se busca por
+  // encabezado como el resto, igual de robusto a que se corra de lugar.
+  descontinuado: ["DC"],
 } as const;
 
 type ColKey = keyof typeof HEADER_VARIANTS;
@@ -57,6 +62,7 @@ function findColIndex(headers: string[], variants: readonly string[]): number {
   }
   return -1;
 }
+
 
 type FetchResult = {
   rows: PrecioReguladoRow[];
@@ -118,6 +124,7 @@ async function fetchPreciosReguladosRaw(): Promise<FetchResult> {
     const portafolioRaw = String(row[col.portafolioVsCircular] ?? "").trim() || cambioRaw;
 
     const diferencia = costo !== null && precioCircular22 !== null ? costo - precioCircular22 : null;
+    const descontinuado = String(row[col.descontinuado] ?? "").trim().toUpperCase() === "S";
 
     rows.push({
       codigo,
@@ -126,6 +133,7 @@ async function fetchPreciosReguladosRaw(): Promise<FetchResult> {
       principioActivo: String(row[col.principioActivo] ?? "").trim(),
       laboratorio: String(row[col.laboratorio] ?? "").trim(),
       costo,
+      descontinuado,
       precioCircular19,
       circular19Comentario,
       precioCircular22,
