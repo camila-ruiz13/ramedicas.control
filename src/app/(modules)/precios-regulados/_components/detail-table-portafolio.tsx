@@ -14,6 +14,7 @@ import { fmtCOP } from "@/lib/autorizacion-compras-constants";
 import {
   PORTAFOLIO_LABELS,
   PORTAFOLIO_BADGE_CLASSES,
+  fmtPctSigned,
   type PrecioReguladoRow,
 } from "@/lib/precios-regulados-constants";
 
@@ -66,6 +67,9 @@ export function DetailTablePortafolio({
               <SortableHead field="diferencia" initialField={sortField} initialDir={sortDir} className="text-right">
                 Diferencia
               </SortableHead>
+              <SortableHead field="pctCambio" initialField={sortField} initialDir={sortDir} className="text-right">
+                % cambio
+              </SortableHead>
               <SortableHead field="portafolioVsCircular" initialField={sortField} initialDir={sortDir}>
                 Portafolio vs circular
               </SortableHead>
@@ -74,7 +78,7 @@ export function DetailTablePortafolio({
           <TableBody>
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={8} className="text-center text-muted-foreground">
                   No se encontraron productos.
                 </TableCell>
               </TableRow>
@@ -110,6 +114,15 @@ export function DetailTablePortafolio({
                   )}
                 >
                   {r.diferencia === null ? "—" : fmtCOP.format(r.diferencia)}
+                </TableCell>
+                <TableCell
+                  className={cn(
+                    "text-right font-mono",
+                    r.pctCambio !== null && r.pctCambio < 0 && "text-red-600 dark:text-red-400",
+                    r.pctCambio !== null && r.pctCambio > 0 && "text-emerald-600 dark:text-emerald-400",
+                  )}
+                >
+                  {r.pctCambio === null ? "—" : fmtPctSigned(r.pctCambio)}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className={cn("border-none", PORTAFOLIO_BADGE_CLASSES[r.portafolioVsCircular])}>

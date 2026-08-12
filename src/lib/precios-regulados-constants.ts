@@ -122,6 +122,10 @@ export const PORTAFOLIO_LABELS: Record<PortafolioVsCircular, string> = {
 // Los "regulado descontinuado*" son un matiz distinto de los "descontinuado*"
 // planos (la hoja los distingue como valores separados) — se les da una
 // familia de color aparte (rosa/fucsia) para no mezclarlos visualmente.
+// NO_REGULADO_C22 usaba teal, muy parecido al verde de POR_DEBAJO (emerald)
+// — a pedido de Camila (2026-08-12) se cambió a violeta para que se
+// distinga de un vistazo, ya que no tiene relación de "bueno/malo" con los
+// demás (solo indica que ese producto no aplica a la circular 22).
 export const PORTAFOLIO_COLORS: Record<PortafolioVsCircular, string> = {
   POR_DEBAJO: "#22c55e",
   POR_ENCIMA: "#ef4444",
@@ -133,7 +137,7 @@ export const PORTAFOLIO_COLORS: Record<PortafolioVsCircular, string> = {
   REGULADO_DESCONTINUADO: "#ec4899",
   REGULADO_DESCONTINUADO_COMPRA: "#f472b6",
   REGULADO_DESCONTINUADO_VENTA: "#db2777",
-  NO_REGULADO_C22: "#14b8a6",
+  NO_REGULADO_C22: "#8b5cf6",
   OTRO: "#d1d5db",
 };
 
@@ -148,7 +152,7 @@ export const PORTAFOLIO_BADGE_CLASSES: Record<PortafolioVsCircular, string> = {
   REGULADO_DESCONTINUADO: "bg-pink-500/15 text-pink-700 dark:text-pink-400",
   REGULADO_DESCONTINUADO_COMPRA: "bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-400",
   REGULADO_DESCONTINUADO_VENTA: "bg-rose-500/15 text-rose-700 dark:text-rose-400",
-  NO_REGULADO_C22: "bg-teal-500/15 text-teal-700 dark:text-teal-400",
+  NO_REGULADO_C22: "bg-violet-500/15 text-violet-700 dark:text-violet-400",
   OTRO: "bg-gray-500/15 text-gray-700 dark:text-gray-400",
 };
 
@@ -171,6 +175,13 @@ export type PrecioReguladoRow = {
   circular22Comentario: string | null;
   // costo - precioCircular22: positivo = por encima del techo regulado.
   diferencia: number | null;
+  // (precioCircular22 - costo) / costo * 100 — % de cambio de ir del costo
+  // de portafolio al precio de la circular 22. Negativo = el precio TIENE
+  // que bajar (circular por debajo del costo, o sea por encima del techo
+  // regulado); positivo = el costo ya está por debajo de la circular (hay
+  // margen). A pedido de Camila (2026-08-12): "si bajó en la circular no
+  // puede ser positivo" — signo opuesto al de `diferencia` a propósito.
+  pctCambio: number | null;
   // precioCircular22 - precioCircular19: positivo = subió de la 19 a la 22.
   diferenciaCircular: number | null;
   cambioRegulacion: CambioRegulacion;
@@ -199,11 +210,15 @@ export function normalizar(raw: string): string {
 // Valores de la columna "Cambio regulación 19 vs 22": "NO ES REGULADO EN LA
 // CIRCULAR 22", "NO ES REGULADO EN LA CIRCULAR 19", "VALIDAR", "NUEVO
 // REGULADO", "SALE DE REGULADO", "SUBIÓ REGULACIÓN", "BAJÓ REGULACIÓN",
-// "CONTINUA CON EL MISMO VALOR DE LA 19". Cualquier otro texto (no debería
-// pasar, pero por si la hoja agrega una categoría nueva) cae en OTRO en vez
-// de forzarse a una de estas — ver cambioRegulacionRaw.
+// "CONTINUA CON EL MISMO VALOR DE LA 19". Camila hizo un reemplazo de
+// "REGULADO" por "CONTROLADO" en la hoja (2026-08-11) — normalizamos
+// CONTROLADO de vuelta a REGULADO antes de los includes() de abajo para no
+// depender de cuál de las dos palabras esté usando la hoja en un momento
+// dado. Cualquier otro texto (no debería pasar, pero por si la hoja agrega
+// una categoría nueva) cae en OTRO en vez de forzarse a una de estas — ver
+// cambioRegulacionRaw.
 export function normalizarCambio(raw: string): CambioRegulacion {
-  const v = normalizar(raw);
+  const v = normalizar(raw).replace(/CONTROLADO/g, "REGULADO");
   if (v.includes("NO ES REGULADO")) {
     if (v.includes("22")) return "NO_REGULADO_C22";
     if (v.includes("19")) return "NO_REGULADO_C19";
@@ -226,8 +241,12 @@ export function normalizarCambio(raw: string): CambioRegulacion {
 // los "DESCONTINUADO*" planos en la hoja, así que se revisan primero para no
 // mezclarlos. Cualquier otro texto cae en OTRO — ver portafolioVsCircularRaw
 // (incluye el caso de venir vacía, que usa el texto de cambio regulación).
+// Mismo reemplazo CONTROLADO -> REGULADO que en normalizarCambio, por el
+// mismo cambio de palabra que hizo Camila en la hoja (incluye variantes como
+// "CONTROLADO DESCONTINUADO TOTAL", que cae en el mismo caso base que antes
+// "REGULADO DESCONTINUADO" porque el match es por includes(), no exacto).
 export function normalizarPortafolio(raw: string): PortafolioVsCircular {
-  const v = normalizar(raw);
+  const v = normalizar(raw).replace(/CONTROLADO/g, "REGULADO");
   if (v.includes("NO ES REGULADO")) return "NO_REGULADO_C22";
   if (v.includes("NO DESCONTINUADO")) return "NO_DESCONTINUADO";
   if (v.includes("REGULADO") && v.includes("DESCONTINUADO")) {
@@ -248,3 +267,76 @@ export function normalizarPortafolio(raw: string): PortafolioVsCircular {
 
 export type CambioCount = { cambio: CambioRegulacion; count: number };
 export type PortafolioCount = { portafolio: PortafolioVsCircular; count: number };
+
+// Formato compartido para los % con signo de este módulo (pctCambio,
+// pctBajo de la hoja proveedores, etc.) — un solo decimal y "+" explícito
+// cuando es positivo (fmtCOP/Intl ya antepone "-" solo, no hace falta acá).
+export function fmtPctSigned(n: number): string {
+  return `${n > 0 ? "+" : ""}${n.toFixed(1)}%`;
+}
+
+// Hoja "proveedores" (pestaña aparte del mismo spreadsheet, mantenida a mano
+// por Camila): seguimiento código por código de los precios que se le pidió
+// bajar a cada proveedor y si ya se le avisó o no. No tiene relación con las
+// columnas de VALIDACIÓN — se cruza por código a nivel de despliegue en la UI.
+export type ProveedorEnvioRow = {
+  codigo: string;
+  // NIT del proveedor (columna E) — a pedido de Camila (2026-08-11), es la
+  // llave que se usa para saber si YA se avisó a un proveedor, en vez del
+  // nombre (variantes de escritura) o del código puntual (no todos los
+  // códigos de un proveedor quedan listados acá, solo los que tenían precio
+  // por ajustar) — ver computeEnviadoPorNit en precios-regulados.ts.
+  nit: string;
+  proveedor: string;
+  precioAnterior: number | null;
+  precioNuevo: number | null;
+  // (precioAnterior - precioNuevo) / precioAnterior * 100 — positivo = el
+  // precio bajó, negativo = subió (pasa en algunas filas de la hoja, ej.
+  // NK0025) — no se fuerza a valor absoluto para no ocultar esos casos.
+  pctBajo: number | null;
+  // Columna "SISTEMA?" de la hoja: "Enviado" vs. cualquier otra cosa (hoy
+  // solo "No").
+  enviado: boolean;
+};
+
+// Info de envío resuelta para un código de producto de Control Directo,
+// combinando las 3 hojas: NIT del proveedor (cruzado por código vía la
+// pestaña "PORTAFOLIO ..."), si a ese NIT ya se le avisó (hoja
+// "proveedores"), y precio anterior/nuevo/% si ese código puntual está
+// listado en "proveedores". `enviado` es null cuando no se pudo resolver el
+// NIT del código o el NIT no aparece todavía en la hoja "proveedores".
+export type CodigoEnvioInfo = {
+  nit: string | null;
+  enviado: boolean | null;
+  precioAnterior: number | null;
+  precioNuevo: number | null;
+  pctBajo: number | null;
+};
+
+export type EnvioEstadoProveedor = {
+  bucket: "ENVIADO" | "NO_ENVIADO" | "PARCIAL" | "SIN_DATO";
+  enviados: number;
+  // Cantidad de códigos del proveedor con dato de envío conocido (nit
+  // resuelto Y presente en la hoja "proveedores") — puede ser menor que el
+  // total de códigos del proveedor.
+  conDato: number;
+};
+
+// Resuelve el estado de envío de UN proveedor a partir de sus códigos — a
+// pedido de Camila (2026-08-12), tanto la lista de proveedores como la
+// torta de "Aviso a proveedores" cuentan por proveedor, no por código, así
+// que ambas usan esta misma función para no divergir en el criterio.
+export function computeEnvioEstadoProveedor(
+  codigos: string[],
+  codigoEnvioInfo: Record<string, CodigoEnvioInfo>,
+): EnvioEstadoProveedor {
+  const conocidos = codigos
+    .map((c) => codigoEnvioInfo[c]?.enviado)
+    .filter((e): e is boolean => e !== null && e !== undefined);
+
+  if (conocidos.length === 0) return { bucket: "SIN_DATO", enviados: 0, conDato: 0 };
+
+  const enviados = conocidos.filter(Boolean).length;
+  const bucket = enviados === conocidos.length ? "ENVIADO" : enviados === 0 ? "NO_ENVIADO" : "PARCIAL";
+  return { bucket, enviados, conDato: conocidos.length };
+}

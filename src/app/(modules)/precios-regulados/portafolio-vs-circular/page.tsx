@@ -5,13 +5,21 @@ import { parsePageParams, paginate } from "@/lib/pagination";
 import { SubmitButton } from "@/components/submit-button";
 import {
   getPreciosRegulados,
+  getProveedoresEnvio,
+  getNitPorCodigo,
+  buildCodigoEnvioInfo,
   applyReguladoPortafolioFilter,
   applyPortafolioFilter,
   computePortafolioCounts,
   computeProveedoresPorEncima,
   NO_REGULADO_PORTAFOLIO,
 } from "@/lib/precios-regulados";
-import { PORTAFOLIO_LABELS, PORTAFOLIO_COLORS, type PortafolioVsCircular } from "@/lib/precios-regulados-constants";
+import {
+  PORTAFOLIO_LABELS,
+  PORTAFOLIO_COLORS,
+  computeEnvioEstadoProveedor,
+  type PortafolioVsCircular,
+} from "@/lib/precios-regulados-constants";
 import { actualizarPreciosRegulados } from "../actions";
 import { PreciosReguladosSubNav } from "../_components/sub-nav";
 import { PortafolioDonut } from "../_components/portafolio-donut";
@@ -20,6 +28,7 @@ import { ReguladoFilterRow } from "../_components/regulado-filter-row";
 import { ProveedoresPorEncimaList } from "../_components/proveedores-por-encima-list";
 import { PortafolioFilterRow } from "../_components/portafolio-filter-row";
 import { DetailTablePortafolio } from "../_components/detail-table-portafolio";
+import { EnvioDonut, type EnvioDonutSlice, type ProveedorEnvioResumen } from "../_components/envio-donut";
 
 // Pestaña "Portafolio vs Circular 22": BS (precio portafolio) vs BU (precio
 // circular 22), con el resultado ya calculado en la hoja en la columna BX.
@@ -42,6 +51,8 @@ export default async function PortafolioVsCircularPage({
   const portafolio = one("portafolio");
 
   const { rows: all, totalPortafolio } = await getPreciosRegulados();
+  const [envioRows, nitPorCodigo] = await Promise.all([getProveedoresEnvio(), getNitPorCodigo()]);
+  const codigoEnvioInfo = buildCodigoEnvioInfo(all.map((r) => r.codigo), nitPorCodigo, envioRows);
 
   // Filtro de primer nivel (Todos/Regulados/No regulados) — a pedido de
   // Camila, ahora alimenta TODO lo demás de la página (dona, chips finos,
@@ -52,11 +63,37 @@ export default async function PortafolioVsCircularPage({
   const filteredRows = applyPortafolioFilter(reguladoFiltered, portafolio);
 
   const portafolioCounts = computePortafolioCounts(reguladoFiltered);
+
   // El ranking de proveedores sigue el filtro activo: sin filtro muestra
   // todo, con un filtro seleccionado muestra solo esa categoría (ej.
   // "Regulados" o "Descontinuado").
   const proveedoresPorEncima = computeProveedoresPorEncima(filteredRows);
   const portafolioLabel = PORTAFOLIO_LABELS[portafolio as PortafolioVsCircular] ?? null;
+
+  // Torta "Aviso a proveedores" — a pedido de Camila (2026-08-12), cuenta
+  // PROVEEDORES (no códigos): reusa la misma agrupación de
+  // proveedoresPorEncima (ya filtrada por Regulación + Comparación vs.
+  // circular) y el mismo criterio de computeEnvioEstadoProveedor que usa la
+  // lista de proveedores, para que ambas coincidan. Clic en la torta (a
+  // pedido de Camila) lista los proveedores de esa categoría — se arma acá
+  // proveedoresPorBucket, liviano (solo nombre + cantidad), en vez de
+  // mandarle al cliente los `productos` completos de cada grupo.
+  const proveedoresPorBucket: Record<string, ProveedorEnvioResumen[]> = {
+    ENVIADO: [],
+    NO_ENVIADO: [],
+    PARCIAL: [],
+    SIN_DATO: [],
+  };
+  for (const g of proveedoresPorEncima) {
+    const { bucket } = computeEnvioEstadoProveedor(g.productos.map((p) => p.codigo), codigoEnvioInfo);
+    proveedoresPorBucket[bucket].push({ proveedor: g.proveedor, count: g.count });
+  }
+  const envioDonutData: EnvioDonutSlice[] = [
+    { label: "Enviado", value: proveedoresPorBucket.ENVIADO.length, fill: "#22c55e", bucket: "ENVIADO" },
+    { label: "No enviado", value: proveedoresPorBucket.NO_ENVIADO.length, fill: "#ef4444", bucket: "NO_ENVIADO" },
+    { label: "Parcial", value: proveedoresPorBucket.PARCIAL.length, fill: "#f59e0b", bucket: "PARCIAL" },
+    { label: "Sin dato", value: proveedoresPorBucket.SIN_DATO.length, fill: "#94a3b8", bucket: "SIN_DATO" },
+  ].filter((d) => d.value > 0);
 
   const reguladosCount = all.filter((r) => !NO_REGULADO_PORTAFOLIO.includes(r.portafolioVsCircular)).length;
   const nivel0: DrilldownBar[] = [
@@ -99,7 +136,7 @@ export default async function PortafolioVsCircularPage({
         <RegulacionBarChart nivel0={nivel0} nivel1={nivel1} />
       </div>
 
-      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[1.3fr_1fr]">
+      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr]">
         <div className="min-w-0 rounded-xl border bg-card p-4">
           <h3 className="text-sm font-semibold">
             Proveedores {portafolioLabel ? `— ${portafolioLabel}` : "(todos los de control directo)"}
@@ -107,7 +144,11 @@ export default async function PortafolioVsCircularPage({
           <p className="mb-2 text-xs text-muted-foreground">
             Clic en un proveedor para ver el detalle de sus productos.
           </p>
-          <ProveedoresPorEncimaList groups={proveedoresPorEncima} />
+          <ProveedoresPorEncimaList groups={proveedoresPorEncima} codigoEnvioInfo={codigoEnvioInfo} />
+        </div>
+        <div className="min-w-0 rounded-xl border bg-card p-4">
+          <h3 className="mb-3 text-sm font-semibold">Aviso a proveedores</h3>
+          <EnvioDonut data={envioDonutData} proveedoresPorBucket={proveedoresPorBucket} />
         </div>
         <div className="min-w-0 rounded-xl border bg-card p-4">
           <h3 className="mb-3 text-sm font-semibold">Portafolio vs. circular 22</h3>

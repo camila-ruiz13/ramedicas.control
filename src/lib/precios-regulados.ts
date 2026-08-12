@@ -1,5 +1,5 @@
 import "server-only";
-import { getSheetValues } from "./google-sheets";
+import { getSheetValues, getSheetTitles } from "./google-sheets";
 import { parseNumeroCO } from "./cambios-precios-constants";
 import {
   type PrecioReguladoRow,
@@ -7,6 +7,8 @@ import {
   type PortafolioVsCircular,
   type CambioCount,
   type PortafolioCount,
+  type ProveedorEnvioRow,
+  type CodigoEnvioInfo,
   CAMBIO_ORDER,
   PORTAFOLIO_ORDER,
   normalizar,
@@ -115,6 +117,8 @@ async function fetchPreciosReguladosRaw(): Promise<FetchResult> {
     // así que ese es el fallback, no un default fijo.
     const portafolioRaw = String(row[col.portafolioVsCircular] ?? "").trim() || cambioRaw;
 
+    const diferencia = costo !== null && precioCircular22 !== null ? costo - precioCircular22 : null;
+
     rows.push({
       codigo,
       proveedor: String(row[col.proveedor] ?? "").trim(),
@@ -126,7 +130,8 @@ async function fetchPreciosReguladosRaw(): Promise<FetchResult> {
       circular19Comentario,
       precioCircular22,
       circular22Comentario,
-      diferencia: costo !== null && precioCircular22 !== null ? costo - precioCircular22 : null,
+      diferencia,
+      pctCambio: costo !== null && precioCircular22 !== null && costo !== 0 ? ((precioCircular22 - costo) / costo) * 100 : null,
       diferenciaCircular:
         precioCircular19 !== null && precioCircular22 !== null ? precioCircular22 - precioCircular19 : null,
       cambioRegulacion: normalizarCambio(cambioRaw),
@@ -158,6 +163,157 @@ export async function getPreciosRegulados(): Promise<FetchResult> {
 
 export function invalidatePreciosReguladosCache(): void {
   cache = null;
+}
+
+// Hoja "proveedores" — mismo spreadsheet que VALIDACIÓN, pero pestaña e
+// idea aparte: seguimiento manual de Camila, código por código, de a qué
+// proveedores se les pidió bajar precio y si ya se les avisó. Fila 1 son los
+// encabezados reales (a diferencia de VALIDACIÓN, acá no hay fila de
+// agrupación combinada).
+const PROVEEDORES_SHEET_NAME = "proveedores";
+
+const PROVEEDORES_HEADER_VARIANTS = {
+  codigo: ["Código", "Codigo"],
+  precioAnterior: ["Precio anterior"],
+  precioNuevo: ["Precio nuevo"],
+  nit: ["Nit", "NIT"],
+  proveedor: ["Proveedor"],
+  // La hoja usa "SISTEMA?" como encabezado de esta columna, con "Enviado" o
+  // "No" como valores — nombre elegido por Camila, no viene de un sistema.
+  enviado: ["Sistema?", "Sistema"],
+} as const;
+
+type ProveedoresColKey = keyof typeof PROVEEDORES_HEADER_VARIANTS;
+
+async function fetchProveedoresEnvioRaw(): Promise<ProveedorEnvioRow[]> {
+  const values = await getSheetValues(SPREADSHEET_ID, PROVEEDORES_SHEET_NAME, "FORMATTED_VALUE");
+  if (values.length < 2) return [];
+
+  const headers = (values[0] ?? []).map((h) => String(h ?? "").trim());
+  const col = {} as Record<ProveedoresColKey, number>;
+  for (const key of Object.keys(PROVEEDORES_HEADER_VARIANTS) as ProveedoresColKey[]) {
+    col[key] = findColIndex(headers, PROVEEDORES_HEADER_VARIANTS[key]);
+  }
+
+  const rows: ProveedorEnvioRow[] = [];
+  for (let r = 1; r < values.length; r++) {
+    const row = values[r] ?? [];
+    const codigo = String(row[col.codigo] ?? "").trim();
+    if (!codigo) continue;
+
+    const precioAnterior = parseNumeroCO(row[col.precioAnterior] as string);
+    const precioNuevo = parseNumeroCO(row[col.precioNuevo] as string);
+    const pctBajo =
+      precioAnterior !== null && precioNuevo !== null && precioAnterior !== 0
+        ? ((precioAnterior - precioNuevo) / precioAnterior) * 100
+        : null;
+
+    rows.push({
+      codigo,
+      nit: String(row[col.nit] ?? "").trim(),
+      proveedor: String(row[col.proveedor] ?? "").trim(),
+      precioAnterior,
+      precioNuevo,
+      pctBajo,
+      enviado: normalizar(String(row[col.enviado] ?? "")) === "ENVIADO",
+    });
+  }
+  return rows;
+}
+
+let proveedoresEnvioCache: { data: ProveedorEnvioRow[]; expiresAt: number } | null = null;
+
+export async function getProveedoresEnvio(): Promise<ProveedorEnvioRow[]> {
+  if (proveedoresEnvioCache && proveedoresEnvioCache.expiresAt > Date.now()) return proveedoresEnvioCache.data;
+  const data = await fetchProveedoresEnvioRaw();
+  proveedoresEnvioCache = { data, expiresAt: Date.now() + CACHE_TTL_MS };
+  return data;
+}
+
+export function invalidateProveedoresEnvioCache(): void {
+  proveedoresEnvioCache = null;
+}
+
+// Un NIT puede repetirse en varias filas de "proveedores" (una por código
+// puntual) — a pedido de Camila (2026-08-11), si CUALQUIERA de esas filas
+// dice "Enviado" se considera que ya se le avisó a ese proveedor (se le
+// manda un solo aviso que cubre todos sus códigos, no uno por código).
+export function computeEnviadoPorNit(rows: ProveedorEnvioRow[]): Map<string, boolean> {
+  const map = new Map<string, boolean>();
+  for (const r of rows) {
+    if (!r.nit) continue;
+    map.set(r.nit, (map.get(r.nit) ?? false) || r.enviado);
+  }
+  return map;
+}
+
+// Pestaña "PORTAFOLIO ..." — mismo spreadsheet, con el NIT del proveedor de
+// cada código (columna B). Camila le agrega la fecha al nombre de la
+// pestaña cada vez que la resube (ej. "PORTAFOLIO 11/08/2026"), igual que
+// "BASE MANTIS ARTÍCULOS ..." en info-general.ts, así que se busca por
+// contenido del nombre en vez de una cadena exacta. Columnas fijas por
+// posición (A=código, B=NIT), a pedido de Camila — mismo criterio que
+// info-general.ts para esta clase de hojas.
+async function findPortafolioSheetName(): Promise<string> {
+  const titles = await getSheetTitles(SPREADSHEET_ID);
+  const match = titles.find((t) => normalizar(t).includes("PORTAFOLIO"));
+  if (!match) {
+    throw new Error('No se encontró ninguna pestaña "PORTAFOLIO ..." en la hoja de Astapor');
+  }
+  return match;
+}
+
+async function fetchNitPorCodigoRaw(): Promise<Map<string, string>> {
+  const sheetName = await findPortafolioSheetName();
+  const values = await getSheetValues(SPREADSHEET_ID, sheetName, "FORMATTED_VALUE");
+  const map = new Map<string, string>();
+  for (let r = 1; r < values.length; r++) {
+    const row = values[r] ?? [];
+    const codigo = String(row[0] ?? "").trim();
+    const nit = String(row[1] ?? "").trim();
+    if (codigo && nit) map.set(codigo, nit);
+  }
+  return map;
+}
+
+let nitPorCodigoCache: { data: Map<string, string>; expiresAt: number } | null = null;
+
+export async function getNitPorCodigo(): Promise<Map<string, string>> {
+  if (nitPorCodigoCache && nitPorCodigoCache.expiresAt > Date.now()) return nitPorCodigoCache.data;
+  const data = await fetchNitPorCodigoRaw();
+  nitPorCodigoCache = { data, expiresAt: Date.now() + CACHE_TTL_MS };
+  return data;
+}
+
+export function invalidateNitPorCodigoCache(): void {
+  nitPorCodigoCache = null;
+}
+
+// Combina las 3 hojas por código: NIT (vía PORTAFOLIO), si a ese NIT ya se
+// le avisó (vía "proveedores" agregado por NIT) y precio anterior/nuevo/%
+// si ese código puntual está listado en "proveedores". Se arma una sola vez
+// por código para no repetir los cruces en cada componente que lo necesite.
+export function buildCodigoEnvioInfo(
+  codigos: string[],
+  nitPorCodigo: Map<string, string>,
+  envioRows: ProveedorEnvioRow[],
+): Record<string, CodigoEnvioInfo> {
+  const enviadoPorNit = computeEnviadoPorNit(envioRows);
+  const envioPorCodigo = new Map(envioRows.map((e) => [e.codigo, e]));
+
+  const result: Record<string, CodigoEnvioInfo> = {};
+  for (const codigo of codigos) {
+    const nit = nitPorCodigo.get(codigo) ?? null;
+    const sheetRow = envioPorCodigo.get(codigo);
+    result[codigo] = {
+      nit,
+      enviado: nit !== null && enviadoPorNit.has(nit) ? enviadoPorNit.get(nit)! : null,
+      precioAnterior: sheetRow?.precioAnterior ?? null,
+      precioNuevo: sheetRow?.precioNuevo ?? null,
+      pctBajo: sheetRow?.pctBajo ?? null,
+    };
+  }
+  return result;
 }
 
 // ---------- Filtros ----------
@@ -216,6 +372,11 @@ export type ProveedorPorEncima = {
   proveedor: string;
   count: number;
   sobrecostoTotal: number;
+  // Promedio simple de pctCambio entre los productos del proveedor que sí
+  // tienen ese % calculado (costo y precio circular 22 conocidos) — a
+  // pedido de Camila (2026-08-12), para verlo también en el ranking y no
+  // solo al abrir el detalle de cada proveedor.
+  pctPromedio: number | null;
   productos: PrecioReguladoRow[];
 };
 
@@ -233,12 +394,16 @@ export function computeProveedoresPorEncima(rows: PrecioReguladoRow[]): Proveedo
   }
 
   return Array.from(porProveedor.entries())
-    .map(([proveedor, productos]) => ({
-      proveedor,
-      count: productos.length,
-      sobrecostoTotal: productos.reduce((sum, p) => sum + (p.diferencia ?? 0), 0),
-      productos: [...productos].sort((a, b) => (b.diferencia ?? 0) - (a.diferencia ?? 0)),
-    }))
+    .map(([proveedor, productos]) => {
+      const pcts = productos.map((p) => p.pctCambio).filter((p): p is number => p !== null);
+      return {
+        proveedor,
+        count: productos.length,
+        sobrecostoTotal: productos.reduce((sum, p) => sum + (p.diferencia ?? 0), 0),
+        pctPromedio: pcts.length > 0 ? pcts.reduce((sum, p) => sum + p, 0) / pcts.length : null,
+        productos: [...productos].sort((a, b) => (b.diferencia ?? 0) - (a.diferencia ?? 0)),
+      };
+    })
     .sort((a, b) => b.count - a.count);
 }
 
