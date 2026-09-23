@@ -1,6 +1,6 @@
-import { Anchor, Castle, Flame, Landmark, Mountain, Snowflake, Users, ShoppingCart, Handshake, Scale, type LucideIcon } from "lucide-react";
+import { Anchor, Castle, Flame, Landmark, Mountain, Snowflake, Users, ShoppingCart, Handshake, Scale, Calculator, type LucideIcon } from "lucide-react";
 
-export type ModuleColor = "teal" | "amber" | "violet" | "rose" | "sky" | "indigo" | "cyan" | "fuchsia" | "emerald";
+export type ModuleColor = "teal" | "amber" | "violet" | "rose" | "sky" | "indigo" | "cyan" | "fuchsia" | "emerald" | "blue";
 
 export type UnitSlug = "westeros" | "essos";
 
@@ -68,6 +68,7 @@ export const MODULE_COLOR_CLASSES: Record<
   cyan: { badge: "bg-cyan-500/15", icon: "text-cyan-600 dark:text-cyan-400" },
   fuchsia: { badge: "bg-fuchsia-500/15", icon: "text-fuchsia-600 dark:text-fuchsia-400" },
   emerald: { badge: "bg-emerald-500/15", icon: "text-emerald-600 dark:text-emerald-400" },
+  blue: { badge: "bg-blue-500/15", icon: "text-blue-600 dark:text-blue-400" },
 };
 
 // Add one entry here per new module folder under src/app/(modules).
@@ -145,6 +146,16 @@ export const MODULES: ModuleDefinition[] = [
     href: "/precios-regulados",
     icon: Scale,
     color: "emerald",
+    unit: "essos",
+  },
+  {
+    slug: "analisis-precios",
+    // Sin nombre temático todavía — Camila pidió dejarlo así por ahora
+    // (2026-09-23) y decidir el nombre de casa/ciudad más adelante.
+    label: "Análisis de Precios",
+    href: "/analisis-precios",
+    icon: Calculator,
+    color: "blue",
     unit: "essos",
   },
   {
