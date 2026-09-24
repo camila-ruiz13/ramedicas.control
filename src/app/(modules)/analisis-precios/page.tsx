@@ -11,6 +11,8 @@ import {
   computeAlertasListaFaltante,
   applyDescontinuadoCompraFilter,
   applyDescontinuadoVentaFilter,
+  applyProveedorFilter,
+  getProveedoresDisponibles,
 } from "@/lib/analisis-precios";
 import { actualizarAnalisisPrecios } from "./actions";
 import { DetailTable } from "./_components/detail-table";
@@ -18,6 +20,7 @@ import { AlertaTable } from "./_components/alerta-table";
 import { AlertaSimpleTable } from "./_components/alerta-simple-table";
 import { AlertaListaFaltanteTable } from "./_components/alerta-lista-faltante-table";
 import { EstadoFilterRow } from "./_components/estado-filter-row";
+import { ProveedorFilter } from "./_components/proveedor-filter";
 
 export default async function AnalisisPreciosPage({
   searchParams,
@@ -36,16 +39,19 @@ export default async function AnalisisPreciosPage({
   const one = (key: string) => (Array.isArray(sp[key]) ? sp[key]![0] : sp[key]) ?? "";
   const compra = one("compra");
   const venta = one("venta");
+  const proveedor = one("proveedor");
 
-  // Filtros de primer nivel (Activos/Descontinuados) — a pedido de Camila
-  // (2026-09-23), alimentan TODO lo demás de la página (tabla, ambas
-  // alertas), no solo la tabla principal. Se aplican en cascada, igual que
-  // el patrón ya usado en precios-regulados/portafolio-vs-circular.
+  // Filtros de primer nivel (Activos/Descontinuados, Proveedor) — a pedido de
+  // Camila (2026-09-23/24), alimentan TODO lo demás de la página (tabla,
+  // todas las alertas), no solo la tabla principal. Se aplican en cascada,
+  // igual que el patrón ya usado en precios-regulados/portafolio-vs-circular.
   const compraFiltered = applyDescontinuadoCompraFilter(articulos, compra);
-  const filteredRows = applyDescontinuadoVentaFilter(compraFiltered, venta);
+  const ventaFiltered = applyDescontinuadoVentaFilter(compraFiltered, venta);
+  const filteredRows = applyProveedorFilter(ventaFiltered, proveedor);
 
   const compraSiCount = articulos.filter((r) => r.descontinuadoCompra).length;
   const ventaSiCount = compraFiltered.filter((r) => r.descontinuadoVenta).length;
+  const proveedoresDisponibles = getProveedoresDisponibles(ventaFiltered);
 
   const params = parsePageParams(sp, { defaultSort: "codigo", defaultDir: "asc", pageSize: 25 });
   const { rows, page, totalCount, totalPages } = paginate(filteredRows, params, [
@@ -92,7 +98,7 @@ export default async function AnalisisPreciosPage({
         </form>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
+      <div className="flex flex-wrap items-end gap-4">
         <EstadoFilterRow
           label="Descontinuado compra"
           queryParam="compra"
@@ -109,6 +115,7 @@ export default async function AnalisisPreciosPage({
           no={compraFiltered.length - ventaSiCount}
           value={venta}
         />
+        <ProveedorFilter proveedores={proveedoresDisponibles} value={proveedor} />
       </div>
 
       <DetailTable

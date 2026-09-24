@@ -69,6 +69,7 @@ const ARTICULOS_HEADERS = {
   costoReferencia2: ["Costo referencia 2"],
   descontinuadoCompra: ["Descontinuado para compra"],
   descontinuadoVenta: ["Descontinuado para venta"],
+  proveedor: ["Proveedor"],
 } as const;
 type ArticuloKey = keyof typeof ARTICULOS_HEADERS;
 
@@ -83,6 +84,7 @@ type ArticuloBase = {
   costoReferencia2: number | null;
   descontinuadoCompra: boolean;
   descontinuadoVenta: boolean;
+  proveedor: string;
 };
 
 function parseArticulosDetallado(): ArticuloBase[] {
@@ -120,6 +122,7 @@ function parseArticulosDetallado(): ArticuloBase[] {
       costoReferencia2: costoRef2 !== null ? costoRef2 * factorConversion : null,
       descontinuadoCompra: String(row[col.descontinuadoCompra] ?? "").trim().toUpperCase() === "S",
       descontinuadoVenta: String(row[col.descontinuadoVenta] ?? "").trim().toUpperCase() === "S",
+      proveedor: String(row[col.proveedor] ?? "").trim(),
     });
   }
   return result;
@@ -356,6 +359,18 @@ export function applyDescontinuadoVentaFilter(rows: AnalisisPrecioRow[], value?:
   if (value === "SI") return rows.filter((r) => r.descontinuadoVenta);
   if (value === "NO") return rows.filter((r) => !r.descontinuadoVenta);
   return rows;
+}
+
+// A pedido de Camila (2026-09-24). 239 proveedores distintos en el
+// portafolio — demasiados para chips como los de descontinuado, se usa un
+// combo (Select) con el nombre exacto en vez de texto libre.
+export function applyProveedorFilter(rows: AnalisisPrecioRow[], proveedor?: string): AnalisisPrecioRow[] {
+  if (!proveedor) return rows;
+  return rows.filter((r) => r.proveedor === proveedor);
+}
+
+export function getProveedoresDisponibles(rows: AnalisisPrecioRow[]): string[] {
+  return [...new Set(rows.map((r) => r.proveedor).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
 
 // Leer los 8 archivos .xls toma varios segundos (el detallado solo ya son
