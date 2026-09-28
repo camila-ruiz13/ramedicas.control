@@ -1,11 +1,19 @@
 import { AlertTriangle } from "lucide-react";
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
+import { TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { ServerSearchInput } from "@/components/server-search-input";
 import { SortableHead } from "@/components/sortable-head";
 import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
 import { ANALISIS_PRECIOS_LISTA_NUMBERS, type AnalisisPrecioRow } from "@/lib/analisis-precios";
-import { fmtMoney, listaField, headClass, LISTA_HEAD_BG } from "./shared";
+import {
+  fmtMoney,
+  listaField,
+  headClass,
+  LISTA_HEAD_BG,
+  SCROLL_CONTAINER_CLASS,
+  STICKY_HEAD_CLASS,
+  RAW_TABLE_CLASS,
+} from "./shared";
 
 // Mismo formato ancho (código + una columna por lista) que la tabla
 // principal, a pedido de Camila (2026-09-28) — antes esta alerta salía como
@@ -62,9 +70,9 @@ export function AlertaCeroListasTable({
             queryParam={q}
             pageParam={pageParam}
           />
-          <div className="overflow-x-auto rounded-xl border bg-card">
-            <Table>
-              <TableHeader>
+          <div className={SCROLL_CONTAINER_CLASS}>
+            <table className={RAW_TABLE_CLASS}>
+              <TableHeader className={STICKY_HEAD_CLASS}>
                 <TableRow>
                   <SortableHead field="codigo" initialField={sortField} initialDir={sortDir} sortParam={sortParam} dirParam={dirParam} pageParam={pageParam}>
                     Código
@@ -109,7 +117,7 @@ export function AlertaCeroListasTable({
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+            </table>
           </div>
           <PaginationControls page={page} totalPages={totalPages} totalCount={totalCount} pageParam={pageParam} />
         </>

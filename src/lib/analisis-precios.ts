@@ -186,12 +186,29 @@ export type AnalisisPrecioRow = ArticuloBase & {
   pctLista9: number | null;
 };
 
-// (precio - referencia) / precio × 100 — sirve tanto para la rentabilidad de
-// Lista 24 contra el costo como para la de las demás listas contra Lista 24,
-// misma forma de fórmula (confirmado con Camila, 2026-09-23).
+// %Rentabilidad Lista 24 = (Lista24 - Costo Referencia 2) / Lista24 × 100.
 function pctSobrePrecio(precio: number | null, referencia: number | null): number | null {
   if (precio === null || referencia === null || precio === 0) return null;
   return ((precio - referencia) / precio) * 100;
+}
+
+// %Rentabilidad de Listas 2, 3, 6, 7 y 9 = (ListaX - Lista24) / Lista24 × 100.
+// Corregido (2026-09-28): antes dividía por ListaX (mismo denominador que
+// pctSobrePrecio) — Camila pidió que el denominador sea siempre Lista24
+// para estas, no el precio de la propia lista.
+function pctVsLista24(precioLista: number | null, lista24: number | null): number | null {
+  if (precioLista === null || lista24 === null || lista24 === 0) return null;
+  return ((precioLista - lista24) / lista24) * 100;
+}
+
+// %Rentabilidad Lista 1 = (Lista1 - Costo Referencia 2) / Costo Referencia 2
+// × 100 — excepción confirmada por Camila (2026-09-28): a diferencia de las
+// listas 2/3/6/7/9 (que se miden contra Lista 24), Lista 1 se mide contra el
+// costo directamente, igual que Lista 24, pero dividiendo por el costo en
+// vez de por el precio de la lista.
+function pctLista1VsCosto(lista1: number | null, costoReferencia2: number | null): number | null {
+  if (lista1 === null || costoReferencia2 === null || costoReferencia2 === 0) return null;
+  return ((lista1 - costoReferencia2) / costoReferencia2) * 100;
 }
 
 async function fetchAnalisisPreciosRaw(): Promise<AnalisisPrecioRow[]> {
@@ -211,17 +228,17 @@ async function fetchAnalisisPreciosRaw(): Promise<AnalisisPrecioRow[]> {
       lista24,
       pctLista24: pctSobrePrecio(lista24, a.costoReferencia2),
       lista1: precios[1],
-      pctLista1: pctSobrePrecio(precios[1], lista24),
+      pctLista1: pctLista1VsCosto(precios[1], a.costoReferencia2),
       lista2: precios[2],
-      pctLista2: pctSobrePrecio(precios[2], lista24),
+      pctLista2: pctVsLista24(precios[2], lista24),
       lista3: precios[3],
-      pctLista3: pctSobrePrecio(precios[3], lista24),
+      pctLista3: pctVsLista24(precios[3], lista24),
       lista6: precios[6],
-      pctLista6: pctSobrePrecio(precios[6], lista24),
+      pctLista6: pctVsLista24(precios[6], lista24),
       lista7: precios[7],
-      pctLista7: pctSobrePrecio(precios[7], lista24),
+      pctLista7: pctVsLista24(precios[7], lista24),
       lista9: precios[9],
-      pctLista9: pctSobrePrecio(precios[9], lista24),
+      pctLista9: pctVsLista24(precios[9], lista24),
     };
   });
 }
@@ -236,20 +253,12 @@ function listasDeFila(r: AnalisisPrecioRow): { n: ListaNumero; precio: number | 
   return LISTA_NUMBERS.map((n) => ({ n, precio: r[`lista${n}` as keyof AnalisisPrecioRow] as number | null }));
 }
 
-// precioRegulacion === 0 significa "no regulado" (la mayoría del portafolio),
-// no "regulado a $0" — solo se evalúa cuando hay un precio regulado real.
-export function esSobrePrecioRegulado(row: AnalisisPrecioRow, precioLista: number | null): boolean {
-  return (
-    precioLista !== null &&
-    row.precioRegulacion !== null &&
-    row.precioRegulacion > 0 &&
-    precioLista > row.precioRegulacion
-  );
-}
-
-export function esBajoCostoReferencia2(row: AnalisisPrecioRow, precioLista: number | null): boolean {
-  return precioLista !== null && row.costoReferencia2 !== null && precioLista < row.costoReferencia2;
-}
+// Definidas en analisis-precios-shared.ts (sin "server-only") para que las
+// pueda importar también un Client Component sin arrastrar todo este
+// archivo — re-exportadas acá para no romper los imports existentes desde
+// "@/lib/analisis-precios".
+export { esSobrePrecioRegulado, esBajoCostoReferencia2 } from "./analisis-precios-shared";
+import { esSobrePrecioRegulado, esBajoCostoReferencia2 } from "./analisis-precios-shared";
 
 export type AlertaPrecioRow = {
   codigo: string;
@@ -357,6 +366,17 @@ export function applyDescontinuadoVentaFilter(rows: AnalisisPrecioRow[], value?:
 export function applyProveedorFilter(rows: AnalisisPrecioRow[], proveedor?: string): AnalisisPrecioRow[] {
   if (!proveedor) return rows;
   return rows.filter((r) => r.proveedor === proveedor);
+}
+
+// "OPERANDO MÉDICO QUIRURGICOS S.A.S" es un proveedor real de este
+// portafolio (1.679 códigos) — no un estado ni un texto genérico. Camila
+// pidió un checkbox rápido para excluirlo sin tener que usar el combo de
+// Proveedor (2026-09-28).
+export const PROVEEDOR_OPERANDO = "OPERANDO MÉDICO QUIRURGICOS S.A.S";
+
+export function applyExcluirOperandoFilter(rows: AnalisisPrecioRow[], value?: string): AnalisisPrecioRow[] {
+  if (value !== "1") return rows;
+  return rows.filter((r) => r.proveedor !== PROVEEDOR_OPERANDO);
 }
 
 // "Control Directo" = tiene Precio Regulación real (> 0) — mismo criterio

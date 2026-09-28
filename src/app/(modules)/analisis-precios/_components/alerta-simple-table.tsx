@@ -1,9 +1,10 @@
 import { AlertTriangle } from "lucide-react";
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
+import { TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { ServerSearchInput } from "@/components/server-search-input";
 import { SortableHead } from "@/components/sortable-head";
 import { PaginationControls } from "@/components/pagination-controls";
 import type { AlertaSinDatoRow } from "@/lib/analisis-precios";
+import { SCROLL_CONTAINER_CLASS, STICKY_HEAD_CLASS, RAW_TABLE_CLASS } from "./shared";
 
 // Mismo layout que AlertaTable pero para las alertas de "dato faltante"
 // (sin costo de referencia / sin precio en listas) — solo código,
@@ -61,9 +62,9 @@ export function AlertaSimpleTable({
             queryParam={q}
             pageParam={pageParam}
           />
-          <div className="overflow-x-auto rounded-xl border bg-card">
-            <Table>
-              <TableHeader>
+          <div className={SCROLL_CONTAINER_CLASS}>
+            <table className={RAW_TABLE_CLASS}>
+              <TableHeader className={STICKY_HEAD_CLASS}>
                 <TableRow>
                   <SortableHead field="codigo" initialField={sortField} initialDir={sortDir} sortParam={sortParam} dirParam={dirParam} pageParam={pageParam}>
                     Código
@@ -96,7 +97,7 @@ export function AlertaSimpleTable({
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+            </table>
           </div>
           <PaginationControls page={page} totalPages={totalPages} totalCount={totalCount} pageParam={pageParam} />
         </>
