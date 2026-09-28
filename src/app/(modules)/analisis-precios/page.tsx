@@ -8,19 +8,23 @@ import {
   computeAlertasSobrePrecioRegulado,
   computeAlertasBajoCostoReferencia2,
   computeAlertaSinCostoReferencia,
-  computeAlertasListaFaltante,
+  computeCodigosEnCeroEnTodasLasListas,
   applyDescontinuadoCompraFilter,
   applyDescontinuadoVentaFilter,
   applyProveedorFilter,
+  applyControlDirectoFilter,
+  applySoloAlertaFilter,
+  esControlDirecto,
   getProveedoresDisponibles,
 } from "@/lib/analisis-precios";
 import { actualizarAnalisisPrecios } from "./actions";
 import { DetailTable } from "./_components/detail-table";
 import { AlertaTable } from "./_components/alerta-table";
 import { AlertaSimpleTable } from "./_components/alerta-simple-table";
-import { AlertaListaFaltanteTable } from "./_components/alerta-lista-faltante-table";
+import { AlertaCeroListasTable } from "./_components/alerta-cero-listas-table";
 import { EstadoFilterRow } from "./_components/estado-filter-row";
 import { ProveedorFilter } from "./_components/proveedor-filter";
+import { SoloAlertaToggle } from "./_components/solo-alerta-toggle";
 
 export default async function AnalisisPreciosPage({
   searchParams,
@@ -40,21 +44,32 @@ export default async function AnalisisPreciosPage({
   const compra = one("compra");
   const venta = one("venta");
   const proveedor = one("proveedor");
+  const controlDirecto = one("controlDirecto");
+  const soloAlerta = one("soloAlerta");
 
-  // Filtros de primer nivel (Activos/Descontinuados, Proveedor) — a pedido de
-  // Camila (2026-09-23/24), alimentan TODO lo demás de la página (tabla,
-  // todas las alertas), no solo la tabla principal. Se aplican en cascada,
-  // igual que el patrón ya usado en precios-regulados/portafolio-vs-circular.
+  // Filtros de primer nivel (Activos/Descontinuados, Proveedor, Control
+  // Directo) — a pedido de Camila (2026-09-23/24/28), alimentan TODO lo
+  // demás de la página (tabla, todas las alertas), no solo la tabla
+  // principal. Se aplican en cascada, igual que el patrón ya usado en
+  // precios-regulados/portafolio-vs-circular.
   const compraFiltered = applyDescontinuadoCompraFilter(articulos, compra);
   const ventaFiltered = applyDescontinuadoVentaFilter(compraFiltered, venta);
-  const filteredRows = applyProveedorFilter(ventaFiltered, proveedor);
+  const proveedorFiltered = applyProveedorFilter(ventaFiltered, proveedor);
+  const filteredRows = applyControlDirectoFilter(proveedorFiltered, controlDirecto);
 
   const compraSiCount = articulos.filter((r) => r.descontinuadoCompra).length;
   const ventaSiCount = compraFiltered.filter((r) => r.descontinuadoVenta).length;
   const proveedoresDisponibles = getProveedoresDisponibles(ventaFiltered);
+  const controlDirectoSiCount = proveedorFiltered.filter(esControlDirecto).length;
+
+  // "Solo con alerta" solo acota la tabla principal — las alertas de abajo
+  // ya están, por definición, restringidas a filas con esa condición (o, en
+  // el caso de las de dato faltante, no tienen nada que ver con el
+  // resaltado rojo), así que no debe tocar `filteredRows` compartido.
+  const tableRows = applySoloAlertaFilter(filteredRows, soloAlerta);
 
   const params = parsePageParams(sp, { defaultSort: "codigo", defaultDir: "asc", pageSize: 25 });
-  const { rows, page, totalCount, totalPages } = paginate(filteredRows, params, [
+  const { rows, page, totalCount, totalPages } = paginate(tableRows, params, [
     "codigo",
     "descripcion",
     "nombreComercial",
@@ -72,9 +87,9 @@ export default async function AnalisisPreciosPage({
   const scParams = parsePageParams(sp, { prefix: "sc", defaultSort: "codigo", defaultDir: "asc", pageSize: 15 });
   const sinCosto = paginate(alertasSinCosto, scParams, ["codigo", "descripcion", "nombreComercial"]);
 
-  const alertasSinLista = computeAlertasListaFaltante(filteredRows);
+  const codigosEnCero = computeCodigosEnCeroEnTodasLasListas(filteredRows);
   const slParams = parsePageParams(sp, { prefix: "sl", defaultSort: "codigo", defaultDir: "asc", pageSize: 15 });
-  const sinLista = paginate(alertasSinLista, slParams, ["codigo", "descripcion", "nombreComercial"]);
+  const sinLista = paginate(codigosEnCero, slParams, ["codigo", "descripcion", "nombreComercial"]);
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -116,6 +131,15 @@ export default async function AnalisisPreciosPage({
           value={venta}
         />
         <ProveedorFilter proveedores={proveedoresDisponibles} value={proveedor} />
+        <EstadoFilterRow
+          label="Control Directo"
+          queryParam="controlDirecto"
+          total={proveedorFiltered.length}
+          si={controlDirectoSiCount}
+          no={proveedorFiltered.length - controlDirectoSiCount}
+          value={controlDirecto}
+        />
+        <SoloAlertaToggle checked={soloAlerta === "1"} />
       </div>
 
       <DetailTable
@@ -172,10 +196,10 @@ export default async function AnalisisPreciosPage({
         sortDir={scParams.sortDir}
       />
 
-      <AlertaListaFaltanteTable
-        title="Activos sin precio en alguna lista"
-        description="Códigos no descontinuados (ni compra ni venta) — una fila por cada lista puntual donde falta el precio."
-        emptyMessage="Todos los códigos activos tienen precio en las 7 listas."
+      <AlertaCeroListasTable
+        title="Activos en $0 en las 7 listas"
+        description="Códigos no descontinuados (ni compra ni venta) cuyo precio está en $0 en todas las listas a la vez."
+        emptyMessage="Todos los códigos activos tienen precio distinto de $0 en al menos una lista."
         paramPrefix="sl"
         rows={sinLista.rows}
         page={sinLista.page}

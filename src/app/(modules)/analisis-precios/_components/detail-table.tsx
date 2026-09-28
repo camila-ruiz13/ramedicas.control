@@ -4,13 +4,8 @@ import { ServerSearchInput } from "@/components/server-search-input";
 import { SortableHead } from "@/components/sortable-head";
 import { PaginationControls } from "@/components/pagination-controls";
 import { cn } from "@/lib/utils";
-import { fmtCOP } from "@/lib/autorizacion-compras-constants";
-import {
-  ANALISIS_PRECIOS_LISTA_NUMBERS,
-  esSobrePrecioRegulado,
-  esBajoCostoReferencia2,
-  type AnalisisPrecioRow,
-} from "@/lib/analisis-precios";
+import { ANALISIS_PRECIOS_LISTA_NUMBERS, esSobrePrecioRegulado, esBajoCostoReferencia2, type AnalisisPrecioRow } from "@/lib/analisis-precios";
+import { fmtMoney, listaField, pctField, headClass, CONTROL_DIRECTO_HEAD_BG, LISTA_HEAD_BG, TwoLineHead } from "./shared";
 
 function fmtPct(v: number | null): string {
   return v === null ? "—" : `${v.toFixed(2)}%`;
@@ -19,34 +14,6 @@ function fmtPct(v: number | null): string {
 function pctClass(v: number | null): string {
   return v !== null && v < 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground";
 }
-
-// Encabezados largos ("%Rentabilidad Lista 24") ensanchaban demasiado las
-// columnas. whitespace-normal por sí solo dejaba que el wrap se solapara con
-// la columna vecina (el ancho de columna en table-layout:auto no se puede
-// forzar de forma confiable con max-width), y mezclar encabezados de una
-// línea con otros de dos hacía que el texto de una columna cayera en la
-// misma fila visual que la de al lado. Ahora TODOS los encabezados
-// numéricos son de exactamente dos líneas (altura pareja, sin solapes).
-const headClass = "text-right";
-// Separador visual al inicio de cada grupo "Lista N" para distinguir dónde
-// empieza cada lista dentro de las 7 columnas seguidas.
-const groupStartClass = "border-l-2 border-border";
-
-function TwoLineHead({ a, b }: { a: string; b: string }) {
-  return (
-    <span className="block leading-tight">
-      <span className="block">{a}</span>
-      <span className="block">{b}</span>
-    </span>
-  );
-}
-
-function fmtMoney(v: number | null): string {
-  return v === null ? "—" : fmtCOP.format(v);
-}
-
-const listaField = (n: number) => `lista${n}` as keyof AnalisisPrecioRow;
-const pctField = (n: number) => `pctLista${n}` as keyof AnalisisPrecioRow;
 
 export function DetailTable({
   rows,
@@ -77,21 +44,21 @@ export function DetailTable({
               <SortableHead field="codigo" initialField={sortField} initialDir={sortDir}>
                 Código
               </SortableHead>
-              <SortableHead field="precioRegulacion" initialField={sortField} initialDir={sortDir} className={headClass}>
-                <TwoLineHead a="Precio" b="Regulación" />
+              <SortableHead field="precioRegulacion" initialField={sortField} initialDir={sortDir} className={cn(headClass, CONTROL_DIRECTO_HEAD_BG)}>
+                <TwoLineHead a="Control" b="Directo" />
               </SortableHead>
-              <SortableHead field="costoReferencia1" initialField={sortField} initialDir={sortDir} className={headClass}>
+              <SortableHead field="costoReferencia1" initialField={sortField} initialDir={sortDir} className={cn(headClass, CONTROL_DIRECTO_HEAD_BG)}>
                 <TwoLineHead a="Costo" b="Referencia 1" />
               </SortableHead>
-              <SortableHead field="costoReferencia2" initialField={sortField} initialDir={sortDir} className={headClass}>
+              <SortableHead field="costoReferencia2" initialField={sortField} initialDir={sortDir} className={cn(headClass, CONTROL_DIRECTO_HEAD_BG)}>
                 <TwoLineHead a="Costo" b="Referencia 2" />
               </SortableHead>
               {ANALISIS_PRECIOS_LISTA_NUMBERS.map((n) => (
                 <Fragment key={n}>
-                  <SortableHead field={listaField(n)} initialField={sortField} initialDir={sortDir} className={cn(headClass, groupStartClass)}>
+                  <SortableHead field={listaField(n)} initialField={sortField} initialDir={sortDir} className={cn(headClass, LISTA_HEAD_BG[n])}>
                     <TwoLineHead a="Lista" b={String(n)} />
                   </SortableHead>
-                  <SortableHead field={pctField(n)} initialField={sortField} initialDir={sortDir} className={headClass}>
+                  <SortableHead field={pctField(n)} initialField={sortField} initialDir={sortDir} className={cn(headClass, LISTA_HEAD_BG[n])}>
                     <TwoLineHead a="%Rentab." b={`Lista ${n}`} />
                   </SortableHead>
                 </Fragment>
@@ -125,7 +92,6 @@ export function DetailTable({
                       <TableCell
                         className={cn(
                           "text-right font-mono",
-                          groupStartClass,
                           alerta && "font-semibold text-red-600 dark:text-red-400",
                         )}
                       >

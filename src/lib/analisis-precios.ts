@@ -320,27 +320,17 @@ export function computeAlertaSinCostoReferencia(rows: AnalisisPrecioRow[]): Aler
     .map(({ codigo, descripcion, nombreComercial }) => ({ codigo, descripcion, nombreComercial }));
 }
 
-// Corregido (2026-09-23): no es "sin precio en las 7 listas" sino una fila
-// por cada lista puntual en la que falte el precio — Camila quiere ver en
-// cuál lista específica falta, no solo si falta en todas.
-export type AlertaListaFaltanteRow = {
-  codigo: string;
-  descripcion: string;
-  nombreComercial: string;
-  lista: number;
-};
-
-export function computeAlertasListaFaltante(rows: AnalisisPrecioRow[]): AlertaListaFaltanteRow[] {
-  const out: AlertaListaFaltanteRow[] = [];
-  for (const r of rows) {
-    if (!esActivo(r)) continue;
-    for (const { n, precio } of listasDeFila(r)) {
-      if (precio === null) {
-        out.push({ codigo: r.codigo, descripcion: r.descripcion, nombreComercial: r.nombreComercial, lista: n });
-      }
-    }
-  }
-  return out;
+// Corregido dos veces (2026-09-23, 2026-09-28): primero era "sin precio en
+// las 7 listas" con precio===null como criterio, pero en los datos reales
+// ningún código está realmente ausente de una lista — todos aparecen, a
+// veces con precio $0. Camila pidió el criterio real: código activo en $0
+// en las 7 listas a la vez. Devuelve la fila completa (no un listado plano
+// código+lista) para poder mostrarla como tabla ancha, código + una columna
+// por lista, igual que la tabla principal.
+export function computeCodigosEnCeroEnTodasLasListas(rows: AnalisisPrecioRow[]): AnalisisPrecioRow[] {
+  return rows.filter(
+    (r) => esActivo(r) && listasDeFila(r).every(({ precio }) => precio === null || precio === 0),
+  );
 }
 
 // ---------- Filtros ----------
@@ -367,6 +357,35 @@ export function applyDescontinuadoVentaFilter(rows: AnalisisPrecioRow[], value?:
 export function applyProveedorFilter(rows: AnalisisPrecioRow[], proveedor?: string): AnalisisPrecioRow[] {
   if (!proveedor) return rows;
   return rows.filter((r) => r.proveedor === proveedor);
+}
+
+// "Control Directo" = tiene Precio Regulación real (> 0) — mismo criterio
+// que el módulo Astapor (precios-regulados) usa para "regulado". 0/null
+// significa que el artículo no está bajo control directo, no que esté
+// regulado a $0 (a pedido de Camila, 2026-09-28).
+export function esControlDirecto(row: AnalisisPrecioRow): boolean {
+  return row.precioRegulacion !== null && row.precioRegulacion > 0;
+}
+
+export function applyControlDirectoFilter(rows: AnalisisPrecioRow[], value?: string): AnalisisPrecioRow[] {
+  if (value === "SI") return rows.filter(esControlDirecto);
+  if (value === "NO") return rows.filter((r) => !esControlDirecto(r));
+  return rows;
+}
+
+// A pedido de Camila (2026-09-24): filtro para ver solo los códigos que
+// tienen al menos una lista marcada en rojo en la tabla principal (por
+// encima del precio regulado o por debajo del costo de referencia 2) — el
+// mismo predicado que ya se usa para resaltar la celda.
+export function filaTieneAlerta(row: AnalisisPrecioRow): boolean {
+  return listasDeFila(row).some(
+    ({ precio }) => esSobrePrecioRegulado(row, precio) || esBajoCostoReferencia2(row, precio),
+  );
+}
+
+export function applySoloAlertaFilter(rows: AnalisisPrecioRow[], value?: string): AnalisisPrecioRow[] {
+  if (value !== "1") return rows;
+  return rows.filter(filaTieneAlerta);
 }
 
 export function getProveedoresDisponibles(rows: AnalisisPrecioRow[]): string[] {
